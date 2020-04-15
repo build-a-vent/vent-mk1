@@ -9,4 +9,4 @@ udpbcaster will prepend the text in the telegram with "ACK:" and send it back to
 Can be tested with "UDP Terminal" on Android. Maybe not all ports are open to user programs in Android,
 however I got it working on port1111
 
-here in the repository is a zipped binary for 64-bit linux (works on ubuntu 18.04)
+HOWTO make : unpack into a directory, type 'make'. You will need gcc for your machine installed
