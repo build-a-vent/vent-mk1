@@ -4,7 +4,7 @@ synopsis : ventsimulator <Portnumber> <ventname>
 
 ventsimulator will connect to the given port and wait for uni/broadcasts with json `{ "cmd":"scan", "seq":<nnn> }` contents
 
-upon reception of a scan order ventsimul will reply with a json string containing `{ "cmd":"stat", "seq":<nnn> ,"var":value ... }`
+upon reception of a scan order ventsimul will reply with a json string containing `{ "req":"scan", cmd":"stat", "seq":<nnn> ,"var":value ... }`
 
 The following numeric variables are supported
 
@@ -25,7 +25,7 @@ The following numeric variables are supported
   | a_wtemp | actual heater water temp NOT EDITABLE
 
 The ventilator can modify those settings with a json string `{ "cmd":"set", "seq":<nnnn>, "<varname>":<value> ...}` and will get as a reply 
-`{ "cmd":"ack", "seq":<nnnn>, "<varname>":<value> ...}`
+`{ "req":"set", cmd":"ack", "seq":<nnnn>, "<varname>":<value> ...}`
 
 
 

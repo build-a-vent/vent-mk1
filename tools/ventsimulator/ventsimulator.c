@@ -50,7 +50,7 @@ struct s_ptable {
   { "c_inspt",1500, 1 }, // config inspir. time(before releasing outflow)
   { "c_cyclt",3000, 1 }, // cyle time (20 cycles / min)
   { "c_wtemp",  38, 1 }, // config herater water temp
-  { "a_peep",   17, 0 }, // actual peep last cycle
+  { "a_eep",    17, 0 }, // actual end exspirat. pressure last cycle
   { "a_wtemp",  30, 0 }, // config herater water temp
   { NULL,        0, 0 }
 };
@@ -142,7 +142,7 @@ uint32_t udprecord_process(char *buffer, uint32_t bufsize) {
       int32_t tparm = json_object_get_count(pO);
       for (int32_t i = 0; i<tparm;++i) {
         const char *name = json_object_get_name(pO,i);
-        constr struct s_ptable * pTab = get_ptable_by_name(name);
+        const struct s_ptable * pTab = get_ptable_by_name(name);
         if (NULL != pTab) {
           if (pTab->editable) {
             JSON_Value * pV = json_object_get_value_at(pO,i);
