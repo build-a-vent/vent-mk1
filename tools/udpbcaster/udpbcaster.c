@@ -8,7 +8,7 @@
 #include <sys/select.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
-#define PORT 1111
+#define DFTPORT 1111
 #define TIMEOUTSEC 10
 
 struct ifaddrs *ifap = NULL;
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   int addr_len;
   int count;
   int ret;
-  int port;
+  int port = DFTPORT;
   const char *bcastmsg;
 
   fd_set readfd;
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     if ((port < 1024) || (port > 16384)) {
       perror ("illegal port number");
       return -1;
-    } else port = PORT;
+    }
   }
 
   if (argv[2] != 0) {
