@@ -10,6 +10,10 @@
 #define DFTPORT 1111
 #define TIMEOUTSEC 10
 
+/* args : 1 : port number
+ *        2 : vent name
+ *        3 : vent mac (3 bytes)
+ */
 
 #include "parson.h"
 //
@@ -80,7 +84,7 @@ void json_copy_string_if_exists(JSON_Object *pD, const JSON_Object *pS, char *na
 
 void json_copy_number_if_exists(JSON_Object *pD, const JSON_Object *pS, char *name) {
   if(json_object_has_value (pS,name)) {
-    int32_t value = json_object_get_number(pS,name);
+    int64_t value = json_object_get_number(pS,name);
     json_object_set_number(pD,name,value);
   }
 }
@@ -189,7 +193,7 @@ int main(int argc, char *argv[]) {
   fd_set readfd;
   char buffer[2048];
 
-  if (argv[1] != 0) {
+  if ((argc > 0) && (argv[1] != 0)) {
     port=atoi(argv[1]);
     if ((port < 1024) || (port > 16384)) {
       perror ("illegal port number");
@@ -197,9 +201,26 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (argv[2] != 0) {
-    json_object_set_string(root_object, "name", argv[2]);
+  /* choose a name */
+
+  char * ventname = "vent-1";
+  if ((argc > 1) && (argv[2] != 0)) {
+    ventname = argv[2];
+  } 
+  json_object_set_string(root_object, "name", ventname);
+  
+  /* dice a mac */
+  int ventmac = 47113013;
+  if (argc > 2) {
+    ventmac ^= atoi(argv[3]);
   }
+  
+  uint8_t *pm = (uint8_t*)&ventmac;
+  char ventmacbuf[50];
+  sprintf(ventmacbuf,"%02hx:%02hx:%02hx",pm[0],pm[1],pm[2]);
+  json_object_set_string(root_object, "mac", ventmacbuf);
+  
+  
   initialize_vent(root_object);
   //
   // have a list of my own interfaces at hand

@@ -1,6 +1,9 @@
 ventsimulator : A simulator of a vent for GUI development
 
-synopsis : ventsimulator <Portnumber> <ventname>
+synopsis : ventsimulator <portnumber> <ventname> <vent-mac-xor-value>
+  default port 1111
+  default name vent-1
+  default mac 35:e3:ce, is xored with the vent-mac-xor-value
 
 ventsimulator will connect to the given port and wait for uni/broadcasts with json `{ "cmd":"scan", "seq":<nnn> }` contents
 
