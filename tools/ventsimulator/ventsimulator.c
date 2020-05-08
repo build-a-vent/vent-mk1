@@ -56,6 +56,10 @@ struct s_ptable {
   { "c_wtemp",  38, 1 }, // config herater water temp
   { "a_eep",    17, 0 }, // actual end exspirat. pressure last cycle
   { "a_wtemp",  30, 0 }, // config herater water temp
+  { "fio2_pct", 40, 1 },
+  { "b_rat",    55, 1 },
+  { "cyc_min",  24, 1 },
+  { "tidal_ml", 500,1 },
   { NULL,        0, 0 }
 };
 
@@ -140,8 +144,8 @@ uint32_t udprecord_process(char *buffer, uint32_t bufsize) {
       json_copy_number_if_exists(reply_object,pO,"seq");      
       merge_to_object(reply_object,root_object);
     }
-    if (!strcmp(cmd,"set")) {
-      json_object_set_string(reply_object, "cmd", "ack");
+    if (!strcmp(cmd,"save")) {
+      json_object_set_string(reply_object, "cmd", "AKK");
       json_copy_number_if_exists(reply_object,pO,"seq");      
       int32_t tparm = json_object_get_count(pO);
       for (int32_t i = 0; i<tparm;++i) {
