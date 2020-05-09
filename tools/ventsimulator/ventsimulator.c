@@ -56,10 +56,6 @@ struct s_ptable {
   { "c_wtemp",  38, 1 }, // config herater water temp
   { "a_eep",    17, 0 }, // actual end exspirat. pressure last cycle
   { "a_wtemp",  30, 0 }, // config herater water temp
-  { "fio2_pct", 40, 1 },
-  { "b_rat",    55, 1 },
-  { "cyc_min",  24, 1 },
-  { "tidal_ml", 500,1 },
   { NULL,        0, 0 }
 };
 
