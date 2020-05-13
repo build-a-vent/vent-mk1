@@ -40,23 +40,18 @@
  * - other things
  */
 
-
-
-
-
-
-
-#define PWM_DRIVER_PIN D0
-#define AIRSOURCE_PIN D6
-#define ALERTLED_PIN D4
-
-
 #include <Wire.h>
 #include <SFE_BMP180.h>   // needs Wire
 
-typedef int32_t s_param_t; // SIGNED!! integer format in numeric & stack operations 
+#include "configitems.h"
+#include "config.h"
+#include "persist.h"
 
-#include "paramstack.h"   // defines and implements the stack object
+
+
+
+
+#include "pstk.h"   // defines and implements the stack object
 
 #include "bmp180sensor.h" // needs SFE_BMP180
 SFE_BMP180 BodyPressure;  //
@@ -81,6 +76,8 @@ c_mag_outflow outflow (PWM_DRIVER_PIN);
 // to calibrate the airflow (in ml/sec)
 #include "calibrator.h"   // reqires stack, airsource, BreathSensor;
 
+
+
 //
 // simple alert lighting a fat red LED ...
 //
@@ -100,7 +97,11 @@ void alertoff(void) {
 // the breather automaton 
 //
 
-#include "simple_breather.h"
+#include "breathe.h"
+
+#include "webctrl.h"
+
+
  
 double     PZero=(0.0);
 double     LastP=(0.0);
@@ -116,7 +117,8 @@ void setup()
   Serial.begin(115200);
   delay(300);
   Serial.println("\nBOOT: build-a-vent.org Mk1 ESP8266 NodeMCU");
-
+  
+  
   for (int i=0;i<10;++i) {
     Wire.begin();
     delay(100);
@@ -136,6 +138,18 @@ void setup()
 
   display.initialize();
   NowMillis = LastPrintTime = millis();
+  netconfig.readFromEeprom();
+
+  webcontrol.setup();
+
+  if (!c_configitems::verify_post_load()) {
+    c_configitems::initialize();
+  }
+
+
+
+
+  
 }
 
 void BigStatusReading() {
@@ -189,6 +203,8 @@ uint8_t wplist(char *c, uint8_t len) {
   if ((rc=calibrator.command(c)) != 0) return rc;
   if ((rc=outflow.command(c)) != 0) return rc;
   if ((rc=breathe.command(c)) != 0) return rc;
+  if ((rc=webcontrol.command(c)) != 0) return rc;
+  if ((rc=stringparser.command(c)) != 0) return rc;
   return 0;
 }
 
@@ -226,12 +242,12 @@ void loop()
   //
   // process objects poll methods
   //
-
   BreathSensor.poll();
   airsource.poll();
   calibrator.poll();
   outflow.poll();
   breathe.poll();
+  webcontrol.poll();
 
   if (!breathe.iscritical()) {
     // here we might do possibliy time-consuming ops (max 100ms!!)

@@ -16,6 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************/
+#include <SFE_BMP180.h>   // needs Wire
 
   /* 
    * a statemachine for BMP180 sensors. no time is wasted in delay()
@@ -26,10 +27,16 @@
    * 
    */
   class Bmp180_sensor {
-  
-    typedef enum { k_idle = 0, k_awaitT=1, k_awaitP=2, k_err } kState;
-  
+
     private:
+      typedef enum { k_idle = 0, k_awaitT=1, k_awaitP=2, k_err } kState;
+
+      #define DSTOREDEPTH 16 // must be pwr of 2 !!
+      struct s_datastore { // store recent values for dp/dt analysis
+        double  pressure;
+        int32_t mtime;
+      } datastore[DSTOREDEPTH];
+    
       double       m_LastTemp;
       double       m_LastPressure;
       double       m_LastRelPressure;
@@ -41,15 +48,14 @@
       bool         m_needcal;
       bool         m_valid;
       kState       m_State;
+      uint8_t      dstoreidx;
+
 
   
     public:
 
-      void showstate(char *b) {
-        sprintf(b,"T=%.1f P=%.1f Pr=%.1f mwd=%d lpt=%d lit=%d need=%d valid=%d state=%d",
-        m_LastTemp, m_LastPressure, m_LastRelPressure, m_MillisWhenDone,m_LastPressTime,m_LastPressRqTime,
-        m_needcal,m_valid,m_State);
-      }
+      void showstate(char *b);
+      
           
       Bmp180_sensor (SFE_BMP180 & pSens) {
         m_pSensor     = &pSens;
@@ -86,76 +92,19 @@
         return m_valid;
       }
 
-      bool isvalid(void) {
-        return m_valid;
-      }
+      int32_t get_last_dpdt(uint8_t distance, double &mbarpersec);
+
+      int32_t get_last_dpdt_time(uint8_t distance);
+
+      bool isvalid(void) { return m_valid; }
 
       int32_t get_last_ptime(void) { return m_LastPressTime; }  // time last pressure info was received
+      
       int32_t get_last_itime(void) { return m_LastPressRqTime; }  // time last pressure sense commandd was issued
 
       bool recalibrate(void)   { m_needcal=true; }
     
-      bool poll(void) {
-        bool r=false;
-        char rc;
-        int32_t now=millis();
-        switch(m_State) {
-          case k_awaitT:
-            if ((int32_t)(now - m_MillisWhenDone) > 0) {
-              rc = m_pSensor->getTemperature(m_LastTemp);
-              if (!rc) {
-                m_State=k_err;
-                return false;
-              }
-              m_State=k_idle;
-            }
-            break;
-          case k_awaitP:
-            if ((int32_t)(now - m_MillisWhenDone) > 0) {
-              rc = m_pSensor->getPressure(m_LastPressure,m_LastTemp);
-              if (!rc) {
-                m_State=k_err;
-                m_valid = false;
-                return false;
-              }
-              r=true;
-              m_valid = true;
-              m_LastRelPressure = m_LastPressure - m_RefPressure;
-              m_LastPressTime   = m_MillisWhenDone;
-              m_State=k_idle;
-            }
-            break;
-          case k_idle :
-            if (m_needcal) {
-              m_needcal=false;
-              if (rc = m_pSensor->startTemperature()) {
-                m_State=k_awaitT;
-                m_MillisWhenDone = now + rc;
-              } else {
-                m_State = k_err;
-                m_valid = false;
-              }
-            } else {
-              if (rc = m_pSensor->startPressure(1)) {
-                m_State=k_awaitP;
-                m_MillisWhenDone  = now + rc;
-                m_LastPressRqTime = now;
-              } else {
-                m_State = k_err;
-                m_valid = false;
-              }
-            }
-            break;
-          case k_err:
-            rc = m_pSensor->getError();
-            Serial.print("Pressure error :");
-            Serial.println(rc);
-            m_State=k_idle;
-            m_valid=false;
-          
-        } // end case
-        return r;
-      } // end poll method
+      bool poll(void);
   }; // end class
 
 #endif

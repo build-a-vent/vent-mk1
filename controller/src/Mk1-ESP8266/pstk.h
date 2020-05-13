@@ -16,22 +16,24 @@
     You should have received a copy of the GNU General Public License
     along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************/
-
+#include "config.h"
+#include "stdio.h"
 /*
  * an implementation of a parameter stack
  * needs predefined s_param_t
  * implements the globally visible stack object
  */
 
-class paramstack {
+class c_paramstk {
     #define MAXSTK 50
     s_param_t stacka[MAXSTK];
     uint8_t sp{0};
   public:  
   
-    paramstack() {
+    c_paramstk() {
       sp=0;
     }
+    
     uint8_t getsp() { return sp; }
     
     s_param_t speek(void) { return (sp) ? stacka[sp-1] : -1; }
@@ -74,52 +76,15 @@ class paramstack {
        sp++;
     }
 
-    void prnstk() { 
-      char buffer[20];
-      sprintf(buffer,"STK[%d]",sp); Serial.print(buffer);
-      for (int8_t i=sp-1;i>=0;--i) {
-        sprintf(buffer," %d",stacka[i]); Serial.print(buffer);
-      }
-      Serial.println();
-    }
-
-    int8_t command(char *cmd) {
-      // spush is done implicitely by presenting a number
-
-      if (!strcmp(cmd,"sclr")) { sp=0; return 1; }
-
-      if (!strcmp(cmd,".s")) { prnstk(); return 1; }
-
-      if (!strcmp(cmd,"level")) { slevel(); return 1; }
-
-      if (!strcmp(cmd,"drop")) { 
-        if (sp > 0) { 
-          --sp;
-          return 1;
-        } else {
-          return -1; //ERR
-        }
-      }
-
-      if (!strcmp(cmd,"rot")) { 
-        if (sp > 2) { 
-          srot(2); return 1;
-        }
-        return -1; //ERR
-      }
-      return 0;
-
-      if (!strcmp(cmd,"nrot")) { 
-        if (sp > 2) { 
-          srot(spop()); return 1;
-        }
-        return -1; //ERR
-      }
-      return 0;
-    }
-
-  
+    void prnstk(void);
     
-} stack;
+
+    
+    int8_t command(char *cmd);
+
+    
+};
+
+extern c_paramstk stack;
 
 #endif // defined VENT_PARAMSTACK_H

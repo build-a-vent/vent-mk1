@@ -17,6 +17,8 @@
     You should have received a copy of the GNU General Public License
     along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************/
+#include <stdint.h>
+#include "configitems.h"
 
 
 /* word processor - collects incoming characters to words separated by whitespace
@@ -34,57 +36,35 @@ typedef enum { ACK=1,NAK=0,ERR=-1} result_t;
 class c_stringparse {
   private:
     #define   TXTBLEN 50
-    char buf  [TXTBLEN];
-    uint8_t   idx {0};
-    bool      negative{false};
-    s_param_t accu;
+    #define   STKLEN 10
 
-  bool is_decimal(void) {
-    uint8_t p=0;
-    accu=0; negative=false;
-    if (buf[0]=='+') {
-      p=1;
-    }
-    if (buf[0]=='-') {
-      p=1; negative=true;
-    }
-    for (;p<idx;++p) {
-      char c=buf[p];
-      if ((c>='0') && (c<='9')) {
-        accu = accu*10 + (c-'0');
-      } else {
-        return false;
-      }
-    }
-    if (negative) { 
-      accu = -accu;
-    }
-    //Serial.print("push");
-    //Serial.println(accu);
-    return true;    
-  }
-      
+    struct    { char b[TXTBLEN]; } wstack[STKLEN]; // the word stack containing string literals
+    uint8_t   stkp {0};                            // the word stack pointer
+    char buf  [TXTBLEN];                           // the word collection buffer
+    uint8_t   idx {0};                             // holds current length in buf
+    bool      negative{false};                     //
+    s_param_t accu;                                //
+    
+    bool is_decimal(void);
+    
   public:
-    c_stringparse(){idx=0;}
   
-      void input(char c) {
-        if ((c==' ')||(c=='\n')||(c=='\r')) {
-          if (idx>0) {
-            buf[idx]=0;
-            if (is_decimal()) {
-              stack.spush(accu);
-            } else {
-              word_process(buf,idx);
-            }
-          }
-          idx=0;
-        } else {
-          if (idx<(TXTBLEN-2)) {
-            buf[idx++]=c;
-          }
-        }
-      }
-} stringparser; //end class
+    c_stringparse() { idx = 0; }
+    
+    void         input(char c);
+    
+    const char * stkget(void);
+    
+    void         stkdrop(void);
+
+    void         stkclr(void);
+
+    int8_t       command(char *cmd);
+
+};
+
+extern c_stringparse stringparser;
+
 
 // stringparser.input(char c) is the method that gets fed the incoming characters
 

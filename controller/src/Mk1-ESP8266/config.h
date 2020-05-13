@@ -1,5 +1,5 @@
-#ifndef VENT_DISPLAY_H
-  #define VENT_DISPLAY_H
+#ifndef VENT_CONFIG_H
+#define VENT_CONFIG_H
   /*******************************************************************
     This file is part of build-a-vent.
   
@@ -16,35 +16,21 @@
       You should have received a copy of the GNU General Public License
       along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
   ********************************************************************/
-  #include <Wire.h>
-  #include <LiquidCrystal_PCF8574.h>
+  #include <stdint.h>
+  typedef int32_t s_param_t; // SIGNED!! integer format in numeric & stack operations 
+  #define LocalUdpPort 1111
+  #define LOCAL_HTTP_PORT 80
 
-  #define LCD_I2C_ADDRESS 0x27 // I2C address of PCF8574
-  
-  extern LiquidCrystal_PCF8574 display_lcd;
 
-  class lcd_display {
-    private:
- 
-    public:
+  #define PWM_DRIVER_PIN D0
+  #define AIRSOURCE_PIN D6
+  #define ALERTLED_PIN D4
 
-      void initialize(void) {
-        Wire.beginTransmission(LCD_I2C_ADDRESS);
-        int error = Wire.endTransmission();
-        display_lcd.begin(20, 4); // initialize the lcd 20 cols, 4 rows
-        display_lcd.setBacklight(255);
-        display_lcd.clear();
-        display_lcd.home();
-        display_lcd.display();
-        
-      }
-      void actualize(uint8_t row, uint8_t col, char*buffer) {
-        display_lcd.setCursor(col,row);
-        display_lcd.print(buffer);
-      }
- 
-  };
 
-extern class lcd_display display;
+  void alert(char *buf);
+  void alertoff(void);
 
-#endif // VENT_DISPLAY_H
+
+
+
+#endif VENT_CONFIG_H

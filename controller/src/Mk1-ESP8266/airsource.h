@@ -16,7 +16,8 @@
     You should have received a copy of the GNU General Public License
     along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************/
-
+#include <Arduino.h>
+#include "pstk.h"
 /* this file defines the object for the air source which supplies
  * breathing air to the ventilation tube */
 
