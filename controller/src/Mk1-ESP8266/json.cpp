@@ -30,7 +30,7 @@ void c_JsonBox::fillBroadcastPacket(JsonDocument &Doc) {
 
 void c_JsonBox::handleIncoming(JsonDocument &Reply, JsonDocument &Request) {
   JsonObject ObjReq = Request.as<JsonObject>();
-  const char* cmd = ReqO["cmd"];
+  const char* cmd = ObjReq["cmd"];
   if (!strcmp("scan",cmd)) {
     fillBroadcastPacket(Reply);
     return;

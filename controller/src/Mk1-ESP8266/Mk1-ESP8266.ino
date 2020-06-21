@@ -43,15 +43,23 @@
 #include <Wire.h>
 #include <SFE_BMP180.h>   // needs Wire
 
+#include <OneWire.h>
+
 #include "configitems.h"
 #include "config.h"
 #include "persist.h"
 
-
-
-
-
 #include "pstk.h"   // defines and implements the stack object
+
+#include "thermo.h"
+
+OneWire BusD6(D6);
+OneWire BusD7(D7);
+
+thermosensor_s_B20 SensBottle(BusD6);
+thermosensor_s_B20 SensAir(BusD7);
+thermocontrol_2p Heater(SensBottle,SensAir,D5);
+
 
 #include "bmp180sensor.h" // needs SFE_BMP180
 SFE_BMP180 BodyPressure;  //
@@ -205,6 +213,7 @@ uint8_t wplist(char *c, uint8_t len) {
   if ((rc=breathe.command(c)) != 0) return rc;
   if ((rc=webcontrol.command(c)) != 0) return rc;
   if ((rc=stringparser.command(c)) != 0) return rc;
+  if ((rc=Heater.command(c)) != 0) return rc;
   return 0;
 }
 
@@ -241,7 +250,7 @@ void loop()
 
   //
   // process objects poll methods
-  //
+  //P
   BreathSensor.poll();
   airsource.poll();
   calibrator.poll();
@@ -252,6 +261,7 @@ void loop()
   if (!breathe.iscritical()) {
     // here we might do possibliy time-consuming ops (max 100ms!!)
     int32_t now=millis();
+    Heater.poll();
     if ((now - LastPrintTime) > 4000) {
       //
       // just to see some signs of life ...
