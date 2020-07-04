@@ -157,6 +157,11 @@
               serializeJson(reply, Udp);
               Udp.endPacket();              
               lastbcast=now;
+              if (showbcast) {
+                --showbcast;
+                serializeJson(reply,Serial);
+                Serial.println("----");                
+              }
               break;
             }
             server.handleClient();                     // Listen for HTTP requests from clients
@@ -206,6 +211,12 @@
           return 1;
         }
       }
+      if (!strcmp(cmd,"showbcast")) {
+        int32_t n = stack.spop();
+        if (n > 0) showbcast=n;
+        return 1;
+      }
+
       return 0;
     }
 

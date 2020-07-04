@@ -27,7 +27,11 @@ installation on all major development platforms.
  * [randomnerdtutorial: ESP32 installation on Arduino](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/) 
  * [heise: In german both for ESP8266 and ESP32](https://www.heise.de/ct/artikel/Arduino-IDE-installieren-und-fit-machen-fuer-ESP8266-und-ESP32-4130814.html)
  
-## ESP32 platform
+## installation of current pressure sensor library (will change soon)
+ * [download library ZIP from here](https://learn.sparkfun.com/tutorials/bmp180-barometric-pressure-sensor-hookup-/installing-the-arduino-library)
+ * put the library into Arduino's lib folder via Arduino->Sketch->Include Library->Add .ZIP Library
+ 
+ ## ESP32 platform
 
  * [circuits4you:ESP32-devkit IO description](https://circuits4you.com/2018/12/31/esp32-devkit-esp32-wroom-gpio-pinout/)
  

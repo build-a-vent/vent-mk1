@@ -10,37 +10,51 @@ class thermosensor_s_B20 {   // single 18B20 on a OneWire Bus.
     thermosensor_s_B20(OneWire& iWire) : myWire(iWire) {}
 
     thermosensor_s_B20() = delete;
+    #if SIMULATE_VENT
+
+      double currenttemp;
     
-    bool startconversion(void) {
-      if (!myWire.reset()) {
-        return false;
+      bool startconversion(void) {
+        return true;
       }
-      myWire.skip(); // skip rom, we assume  only a single device on the bus
-      myWire.write(0x44); // start conversion command, takes up to 750ms
-      return true;
-    }
-    
-    bool endconversion(int16_t* pCelsius) {
-      uint8_t data[9];
-      if (!myWire.reset()) {
-        return false;
+      bool endconversion(int16_t* pCelsius) {
+        *pCelsius=int(currenttemp);
+        return true;
       }
-      myWire.skip();
-      myWire.write(0xBE);         // Read Scratchpad
-    
-      for (uint8_t i = 0; i < 9; i++) {           // we need 9 bytes
-        data[i] = myWire.read();
+      
+    #else
+      
+      bool startconversion(void) {
+        if (!myWire.reset()) {
+          return false;
+        }
+        myWire.skip(); // skip rom, we assume  only a single device on the bus
+        myWire.write(0x44); // start conversion command, takes up to 750ms
+        return true;
       }
-    
-      if ((uint8_t)OneWire::crc8(data, 8) != data[8]) {
-        return false;
+      
+      bool endconversion(int16_t* pCelsius) {
+        uint8_t data[9];
+        if (!myWire.reset()) {
+          return false;
+        }
+        myWire.skip();
+        myWire.write(0xBE);         // Read Scratchpad
+      
+        for (uint8_t i = 0; i < 9; i++) {           // we need 9 bytes
+          data[i] = myWire.read();
+        }
+      
+        if ((uint8_t)OneWire::crc8(data, 8) != data[8]) {
+          return false;
+        }
+      
+        // Convert the data bytes to actual temperature, omit fractional bits
+        *pCelsius = (data[1] << 4) | data[0]>>4;
+        return true;
       }
-    
-      // Convert the data bytes to actual temperature, omit fractional bits
-      *pCelsius = (data[1] << 4) | data[0]>>4;
-      return true;
-    }
-    
+    #endif
+      
   private:
   
     OneWire & myWire;
@@ -61,15 +75,50 @@ class thermocontrol_2p {
     }
                        
   public:
+
+    #if SIMULATE_VENT
+      double tempSimHeater;
+      double tempSimBottle;
+      double tempSimAir;
+      bool   heaterSimOn;
+    #endif
+  
     thermocontrol_2p(thermosensor_s_B20 & bottle, thermosensor_s_B20 & air, uint8_t pin) : 
       sensBottle(bottle), sensAir(air), pwrPin(pin) {
         pinMode(pwrPin,OUTPUT);
         setheater(false);
         state=k_init;
+        #if SIMULATE_VENT
+          tempSimBottle = tempSimHeater = tempSimAir=20.0;
+          heaterSimOn = false;
+        #endif
+
     }
-  
+
     thermocontrol_2p() = delete;
 
+    void show(void) {
+      #if SIMULATE_VENT
+        Serial.println ("--- HeaterSim ---- ");
+        Serial.print("SimHeater : ");
+        Serial.print(tempSimHeater);
+        Serial.print("  ");
+        Serial.println(heaterSimOn?"On":"Off");
+        Serial.print("SimBottle : ");
+        Serial.println(tempSimBottle);
+        Serial.print("SimAir : ");
+        Serial.println(tempSimAir);
+      #endif
+      Serial.print ("Status ");
+      Serial.print (state);
+      Serial.print (", TempBottleSet ");
+      Serial.print (c_tempBottleSet);
+      Serial.print (", TempBottle ");
+      Serial.print (a_tempBottle);
+      Serial.print (", TempAir ");
+      Serial.println (a_tempAir);
+    }
+    
     void settemp(int16_t t) {
       c_tempBottleSet=t;
     }
@@ -78,7 +127,6 @@ class thermocontrol_2p {
       c_tempBottleAlert=t;
     }
     
-  
     int8_t command(const char *cmd) {
       if (!strcmp(cmd,"tempset")) { 
         s_param_t temp = stack.spop();
@@ -101,12 +149,7 @@ class thermocontrol_2p {
       }
 
       if (!strcmp(cmd,"tempshow")) { 
-        Serial.print ("Status ");
-        Serial.print (state);
-        Serial.print (", TempBottle ");
-        Serial.print (a_tempBottle);
-        Serial.print (", TempAir ");
-        Serial.println (a_tempAir);
+        this->show();
         return 1; 
       }
       
@@ -141,7 +184,20 @@ class thermocontrol_2p {
           if (!sensBottle.endconversion(&a_tempBottle)) {
             state = k_fail;
           } else {
-            setheater(c_tempBottleSet > a_tempBottle);
+            bool heating = c_tempBottleSet > a_tempBottle;
+            setheater(heating);
+            #if SIMULATE_VENT
+              // a cheap 2nd order heater model 
+              if (heating) {
+                tempSimHeater +=5; // heat energy gain
+              }
+              tempSimBottle += 0.02 * (tempSimHeater - tempSimBottle) // heat gain
+                            -  0.05 * (tempSimBottle - 20.0);          // ambient loss
+              tempSimHeater -= 0.08 * (tempSimHeater - tempSimBottle);
+              tempSimAir     = tempSimAir * 0.98 + tempSimBottle * 0.02;
+              sensAir.currenttemp    = tempSimAir;
+              sensBottle.currenttemp = tempSimBottle;
+            #endif
             state = k_restart;
           }
           break;

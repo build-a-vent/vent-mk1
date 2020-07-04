@@ -39,26 +39,27 @@
  *   influence your pressure readings
  * - other things
  */
+#include "configitems.h"
 
-#include <Wire.h>
-#include <SFE_BMP180.h>   // needs Wire
-
+#if SIMULATE_VENT
+  #include "sfe_fake_sensor.h"
+#else
+  #include <Wire.h>
+  #include <SFE_BMP180.h>   // needs Wire
+#endif  
 #include <OneWire.h>
 
-#include "configitems.h"
-#include "config.h"
+
 #include "persist.h"
-
 #include "pstk.h"   // defines and implements the stack object
+#include "thermo.h" // heater and temperature sensors
 
-#include "thermo.h"
+OneWire BusTBtl(ONEWIRE_T_BTL_PIN);
+OneWire BusTAir(ONEWIRE_T_AIR_PIN);
 
-OneWire BusD6(D6);
-OneWire BusD7(D7);
-
-thermosensor_s_B20 SensBottle(BusD6);
-thermosensor_s_B20 SensAir(BusD7);
-thermocontrol_2p Heater(SensBottle,SensAir,D5);
+thermosensor_s_B20 SensBtl(BusTBtl);
+thermosensor_s_B20 SensAir(BusTAir);
+thermocontrol_2p Heater(SensBtl,SensAir,HEATER_PIN);
 
 
 #include "bmp180sensor.h" // needs SFE_BMP180
@@ -84,22 +85,9 @@ c_mag_outflow outflow (PWM_DRIVER_PIN);
 // to calibrate the airflow (in ml/sec)
 #include "calibrator.h"   // reqires stack, airsource, BreathSensor;
 
+#include "alert.h"
 
-
-//
-// simple alert lighting a fat red LED ...
-//
-
-void alert(char *buf) {
-  display.actualize(1,0,buf);
-  pinMode(ALERTLED_PIN,OUTPUT);
-  digitalWrite(ALERTLED_PIN,0); // LED ON
-}
-
-void alertoff(void) {
-  display.actualize(1,0,"                   ");
-  digitalWrite(ALERTLED_PIN,1); // LED ON
-}
+c_alert myalerter;
 
 //
 // the breather automaton 
@@ -122,29 +110,31 @@ int32_t   LastPrintTime(0);
 
 void setup()
 {
+  Wire.begin();
   Serial.begin(115200);
   delay(300);
   Serial.println("\nBOOT: build-a-vent.org Mk1 ESP8266 NodeMCU");
-  
-  
-  for (int i=0;i<10;++i) {
-    Wire.begin();
-    delay(100);
-    if (BodyPressure.begin()) {
-      Serial.println("BMP180 init success");
-      PressAvail=true;
-      break;
-    } else {
-      Serial.println("BMP180 init fail");
-      delay(50);
+  if (SIMULATE_VENT) {
+    Serial.println("---------- SIMULATING -----------------");  
+  } else {  
+    for (int i=0;i<10;++i) {
+      delay(100);
+      if (BodyPressure.begin()) {
+        Serial.println("BMP180 init success");
+        PressAvail=true;
+        break;
+      } else {
+        Serial.println("BMP180 init fail");
+      }
     }
+    if (!PressAvail) {
+      Serial.println("cont FAILURE of BreathSensor !!");
+    }
+    #if HAS_DISPLAY
+      display.initialize();
+    #endif
   }
-  if (PressAvail) {
-  } else {
-    Serial.println("cont FAILURE of BreathSensor !!");
-  }
-
-  display.initialize();
+  
   NowMillis = LastPrintTime = millis();
   netconfig.readFromEeprom();
 
@@ -153,10 +143,6 @@ void setup()
   if (!c_configitems::verify_post_load()) {
     c_configitems::initialize();
   }
-
-
-
-
   
 }
 
@@ -189,11 +175,17 @@ void BigStatusReading() {
     BreathSensor.showstate(buffer);
     Serial.println(buffer);
 
-    sprintf(buffer,"%+7.1f %-.1f  ",Press,RelPress);
-    display.actualize(0,0,buffer);
+    Heater.show();
+
+    #if HAS_DISPLAY
+      sprintf(buffer,"%+7.1f %-.1f  ",Press,RelPress);
+      display.actualize(0,0,buffer);
+    #endif
   } else {
     Serial.println("invalid reading");;
-    display.actualize(0,0,"---invalid---");
+    #if HAS_DISPLAY
+      display.actualize(0,0,"---invalid---");
+    #endif
   }    
 }
 
@@ -206,14 +198,14 @@ void BigStatusReading() {
 
 uint8_t wplist(char *c, uint8_t len) {
   uint8_t rc;
-  if ((rc=stack.command(c)) != 0) return rc;
-  if ((rc=airsource.command(c)) != 0) return rc;
-  if ((rc=calibrator.command(c)) != 0) return rc;
-  if ((rc=outflow.command(c)) != 0) return rc;
-  if ((rc=breathe.command(c)) != 0) return rc;
-  if ((rc=webcontrol.command(c)) != 0) return rc;
+  if ((rc=stack.command(c)) != 0)        return rc;
+  if ((rc=airsource.command(c)) != 0)    return rc;
+  if ((rc=calibrator.command(c)) != 0)   return rc;
+  if ((rc=outflow.command(c)) != 0)      return rc;
+  if ((rc=breathe.command(c)) != 0)      return rc;
+  if ((rc=webcontrol.command(c)) != 0)   return rc;
   if ((rc=stringparser.command(c)) != 0) return rc;
-  if ((rc=Heater.command(c)) != 0) return rc;
+  if ((rc=Heater.command(c)) != 0)       return rc;
   return 0;
 }
 
@@ -235,33 +227,35 @@ void word_process(char *c, unsigned char len) {
 void loop()
 {
 
-   //
-   // feed serial input data to stringparser
-   //
-   while (Serial.available()) {
-     char c = Serial.read();
-     if ((c==0x0d)|| (c==0x0a)) {
-      Serial.println();
-     } else {
-       Serial.print(c);    
-     }
-     stringparser.input(c); 
-   }
+  //
+  // feed serial input data to stringparser
+  //
+  while (Serial.available()) {
+    char c = Serial.read();
+    if ((c==0x0d)|| (c==0x0a)) {
+     Serial.println();
+    } else {
+      Serial.print(c);    
+    }
+    stringparser.input(c); 
+  }
 
   //
   // process objects poll methods
-  //P
+  //
   BreathSensor.poll();
   airsource.poll();
   calibrator.poll();
   outflow.poll();
   breathe.poll();
+  myalerter.poll();
   webcontrol.poll();
 
   if (!breathe.iscritical()) {
     // here we might do possibliy time-consuming ops (max 100ms!!)
     int32_t now=millis();
     Heater.poll();
+    
     if ((now - LastPrintTime) > 4000) {
       //
       // just to see some signs of life ...

@@ -16,8 +16,11 @@
     You should have received a copy of the GNU General Public License
     along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************/
-#include <SFE_BMP180.h>   // needs Wire
-
+#if SIMULATE_VENT
+  #include "sfe_fake_sensor.h"
+#else
+  #include <SFE_BMP180.h>   // needs Wire
+#endif
   /* 
    * a statemachine for BMP180 sensors. no time is wasted in delay()
    * the sensor reads the temperature ASAP when recalibrate() is called.

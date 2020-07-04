@@ -50,6 +50,7 @@ class c_webcontrol {
     int32_t          stepstart;
     int32_t          lastbcast;
     int32_t          longestop{0};
+    int32_t          showbcast{0};
     WiFiUDP          Udp;
     IPAddress        MyAddr;
     IPAddress        Netmask;
@@ -64,8 +65,8 @@ class c_webcontrol {
   public:
 
     c_webcontrol() {
-      ApName = "bav_"+WiFi.macAddress();
-      MacId  = ApName.substring(13);
+      MacId  = WiFi.macAddress();
+      ApName = "bav_"+MacId;
     }
 
     inline void setup(void) {
@@ -74,7 +75,7 @@ class c_webcontrol {
 
 
     inline void add_json(JsonObject &Obj) {
-        Obj.getOrAddMember("f_macid").set(MacId);
+        Obj.getOrAddMember("mac").set(MacId);
     }
 
     void poll(void);

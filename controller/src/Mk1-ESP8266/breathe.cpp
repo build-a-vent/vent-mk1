@@ -38,11 +38,9 @@ void c_s_breather::handle_monitor(uint8_t index) {
     s_param_t cp = pressmon[index].getval();
     if ((lastp - cp) > 5)  {
       sprintf(buffer,"OVP : %d %d %d", index , cp, lastp);
-      //alert(buffer);
     }
     if ((lastp - cp) < -4) {
       sprintf(buffer,"UDP : %d %d %d", index , cp, lastp);
-      //alert(buffer);
     }
   }
 }
@@ -106,12 +104,14 @@ void c_s_breather::poll(void) {
       if ((int32_t)(now - cyclestart) > cycletime) {
         handle_monitor(3);
         p_ee = lastp;
-        sprintf (buffer,"%.1f %.1f %d  ",dpdt_center, dpdt_end,deltat_center);
-        display.actualize(1,0,buffer);
-        sprintf (buffer,"PI=%+3d EI=%+3d EE%+3d",p_imax, p_ei, p_ee);
-        display.actualize(2,0,buffer);
-        sprintf (buffer,"I%4d P%4d C%4d",breathlen, switcheipeep, cycletime);
-        display.actualize(3,0,buffer);
+        #if HAS_DISPLAY
+          sprintf (buffer,"%.1f %.1f %d  ",dpdt_center, dpdt_end,deltat_center);
+          display.actualize(1,0,buffer);
+          sprintf (buffer,"PI=%+3d EI=%+3d EE%+3d",p_imax, p_ei, p_ee);
+          display.actualize(2,0,buffer);
+          sprintf (buffer,"I%4d P%4d C%4d",breathlen, switcheipeep, cycletime);
+          display.actualize(3,0,buffer);
+        #endif
         outflow.set(s_iip); // limit to high iip;
         p_imax = 0;
         cyclestart = now;
@@ -149,7 +149,7 @@ bool c_s_breather::start(s_param_t t_flow, s_param_t t_plateau, s_param_t t_cycl
     Serial.println("breathe : running");
     state=k_start;            
     moncycle = 0;
-    alertoff();
+    clearalerts();
     return true;
   }
   return false;        
@@ -162,11 +162,10 @@ void c_s_breather::add_current_status(JsonObject &Obj) {
 }
 
 int8_t c_s_breather::command(char *cmd) {
-  char buffer[500];      
 
   if (!strcmp(cmd,"back")) {
     moncycle = 0;
-    alertoff();
+    clearalerts();
     return 1;
   }
 
@@ -176,6 +175,7 @@ int8_t c_s_breather::command(char *cmd) {
   }
 
   if (!strcmp(cmd,"badump")) {
+    char buffer[100];      
     for (uint8_t i=0;i<4;++i) {
       sprintf(buffer,"ALR %d = %d",i,pressmon[i].getval());
       Serial.println(buffer);
@@ -212,7 +212,7 @@ int8_t c_s_breather::command(char *cmd) {
     Serial.println("breathe : running");
     state=k_start;            
     moncycle = 0;
-    alertoff();
+    clearalerts();
     return 1;
   }
   return 0;

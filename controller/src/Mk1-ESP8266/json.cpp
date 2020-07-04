@@ -22,7 +22,7 @@
 
 void c_JsonBox::fillBroadcastPacket(JsonDocument &Doc) {
   JsonObject Obj = Doc.to<JsonObject>();
-  
+  Obj.getOrAddMember("cmd").set("status");  
   c_configitems::serialize_config(Obj);
   webcontrol.add_json(Obj);
   breathe.add_current_status(Obj);
@@ -32,11 +32,14 @@ void c_JsonBox::handleIncoming(JsonDocument &Reply, JsonDocument &Request) {
   JsonObject ObjReq = Request.as<JsonObject>();
   const char* cmd = ObjReq["cmd"];
   if (!strcmp("scan",cmd)) {
+    ObjReq.getOrAddMember("req").set(cmd);
     fillBroadcastPacket(Reply);
     return;
   }
   if (!strcmp("set",cmd)) {
+    serializeJson(Request,Serial);
     JsonObject RepO = Reply.to<JsonObject>();
+    webcontrol.add_json(RepO);
     RepO.getOrAddMember("cmd").set("ack");
     RepO.getOrAddMember("req").set(cmd);
     for (JsonPair kv : ObjReq) {

@@ -17,9 +17,12 @@
     You should have received a copy of the GNU General Public License
     along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************/
+#include <ArduinoJson.h>
 #include "config.h"
 #include "airsource.h"
-#include <ArduinoJson.h>
+#include "alert.h"
+
+extern c_alert myalerter;
 
 extern c_airsource airsource;
   //  -------------- WORK IN PROGRESS ---------------------------
@@ -100,6 +103,13 @@ extern c_airsource airsource;
       bool iscritical(void) {
         return (airsource.is_open());
         /* NO time-consuming operations should run during those states */
+      }
+
+      void clearalerts(void) {
+        myalerter.set(c_alert::k_overpress_inspir,false);
+        myalerter.set(c_alert::k_underpress_inspir,false);
+        myalerter.set(c_alert::k_overpress_exspir,false);
+        myalerter.set(c_alert::k_underpress_exspir,false);  
       }
 
       void handle_monitor(uint8_t index);

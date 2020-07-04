@@ -1,7 +1,7 @@
 #include "config.h"
 #include "bmp180sensor.h"
-
-
+#include <stdio.h>
+#include <Arduino.h>
 
       void Bmp180_sensor::showstate(char *b) {
         sprintf(b,"T=%.1f P=%.1f Pr=%.1f mwd=%d lpt=%d lit=%d need=%d valid=%d state=%d",
