@@ -149,21 +149,23 @@
               ------------------ */
               break;
             }
-            if ((int32_t)(now - lastbcast) > 5000) {  // broadcast packet every 5 seconds        
-              DynamicJsonDocument reply(2048);
-              Serial.println("Broadcast");
-              Udp.beginPacket(BroadcastAddr, LocalUdpPort);
-              JsonBox.fillBroadcastPacket(reply);
-              serializeJson(reply, Udp);
-              Udp.endPacket();              
-              lastbcast=now;
-              if (showbcast) {
-                --showbcast;
-                serializeJson(reply,Serial);
-                Serial.println("----");                
+            #if PERIODIC_BCAST
+              if ((int32_t)(now - lastbcast) > PERIODIC_BCAST) {  // broadcast packet every PERIODIC_BCAST millisecs         */
+                DynamicJsonDocument reply(2048);
+                Serial.println("Broadcast");
+                Udp.beginPacket(BroadcastAddr, LocalUdpPort);
+                JsonBox.fillBroadcastPacket(reply);
+                serializeJson(reply, Udp);
+                Udp.endPacket();              
+                lastbcast=now;
+                if (showbcast) {
+                  --showbcast;
+                  serializeJson(reply,Serial);
+                  Serial.println("----");                
+                }
+                break;
               }
-              break;
-            }
+            #endif
             server.handleClient();                     // Listen for HTTP requests from clients
             // FIXME : check for lost connection ...
           }

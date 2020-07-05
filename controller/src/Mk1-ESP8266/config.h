@@ -18,6 +18,7 @@
   ********************************************************************/
 
   #define SIMULATE_VENT 1         // set to 1 to create a vent simulator without sensors or actors
+  #define PERIODIC_BCAST 0        // set to the no of milliseconds between bcasts, 0 for no bcasts
   #define HAS_DISPLAY   0
   
   #include <stdint.h>
