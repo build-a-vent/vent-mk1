@@ -16,35 +16,40 @@
       You should have received a copy of the GNU General Public License
       along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
   ********************************************************************/
-  #include <Wire.h>
-  #include <LiquidCrystal_PCF8574.h>
+  #include "config.h"
 
-  #define LCD_I2C_ADDRESS 0x27 // I2C address of PCF8574
+  #if SIMULATE_VENT
+
+  #else
+    #include <Wire.h>
+    #include <LiquidCrystal_PCF8574xxx.h>
   
-  extern LiquidCrystal_PCF8574 display_lcd;
-
-  class lcd_display {
-    private:
- 
-    public:
-
-      void initialize(void) {
-        Wire.beginTransmission(LCD_I2C_ADDRESS);
-        int error = Wire.endTransmission();
-        display_lcd.begin(20, 4); // initialize the lcd 20 cols, 4 rows
-        display_lcd.setBacklight(255);
-        display_lcd.clear();
-        display_lcd.home();
-        display_lcd.display();
-        
-      }
-      void actualize(uint8_t row, uint8_t col, char*buffer) {
-        display_lcd.setCursor(col,row);
-        display_lcd.print(buffer);
-      }
- 
-  };
-
-extern class lcd_display display;
-
+    #define LCD_I2C_ADDRESS 0x27 // I2C address of PCF8574
+    
+    extern LiquidCrystal_PCF8574 display_lcd;
+  
+    class lcd_display {
+      private:
+   
+      public:
+  
+        void initialize(void) {
+          Wire.beginTransmission(LCD_I2C_ADDRESS);
+          int error = Wire.endTransmission();
+          display_lcd.begin(20, 4); // initialize the lcd 20 cols, 4 rows
+          display_lcd.setBacklight(255);
+          display_lcd.clear();
+          display_lcd.home();
+          display_lcd.display();
+          
+        }
+        void actualize(uint8_t row, uint8_t col, char*buffer) {
+          display_lcd.setCursor(col,row);
+          display_lcd.print(buffer);
+        }
+   
+    };
+  
+    extern class lcd_display display;
+  #endif
 #endif // VENT_DISPLAY_H

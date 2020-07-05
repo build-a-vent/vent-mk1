@@ -110,7 +110,9 @@ int32_t   LastPrintTime(0);
 
 void setup()
 {
-  Wire.begin();
+  #if ! SIMULATE_VENT
+    Wire.begin();
+  #endif
   Serial.begin(115200);
   delay(300);
   Serial.println("\nBOOT: build-a-vent.org Mk1 ESP8266 NodeMCU");

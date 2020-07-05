@@ -14,8 +14,11 @@
     You should have received a copy of the GNU General Public License
     along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************/
-#include "display.h"
+#include "config.h"
+#if !SIMULATE_VENT
+  #include "display.h"
 
-LiquidCrystal_PCF8574 display_lcd(LCD_I2C_ADDRESS);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+  LiquidCrystal_PCF8574 display_lcd(LCD_I2C_ADDRESS);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
-class lcd_display display;
+  class lcd_display display;
+#endif
