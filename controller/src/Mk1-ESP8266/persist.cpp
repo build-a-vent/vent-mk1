@@ -75,6 +75,16 @@ void c_persist::writeToEeprom(void) {
   lastsaved = lastupdate; // not dirty
 }
 
+void c_persist::poll(bool maywrite) {
+  if (maywrite && (lastsaved != lastupdate)) {
+    int32_t now = millis();    
+    if ((now-lastupdate) > LASTUPDATE_TO_WRITE_MS) {
+      Serial.println("writing config");
+      writeToEeprom();
+    }
+  }
+}
+
 c_persist netconfig;
 
   

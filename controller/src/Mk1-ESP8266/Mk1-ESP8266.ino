@@ -208,6 +208,7 @@ uint8_t wplist(char *c, uint8_t len) {
   if ((rc=webcontrol.command(c)) != 0)   return rc;
   if ((rc=stringparser.command(c)) != 0) return rc;
   if ((rc=Heater.command(c)) != 0)       return rc;
+  if ((rc=JsonBox.command(c)) != 0)      return rc;
   return 0;
 }
 
@@ -252,6 +253,7 @@ void loop()
   breathe.poll();
   myalerter.poll();
   webcontrol.poll();
+  netconfig.poll(!breathe.iscritical());
 
   if (!breathe.iscritical()) {
     // here we might do possibliy time-consuming ops (max 100ms!!)

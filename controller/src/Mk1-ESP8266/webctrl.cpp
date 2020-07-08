@@ -223,7 +223,8 @@
         if ((keydata != NULL) && (ssiddata != NULL)) {
           netconfig.putSsid(ssiddata);
           netconfig.putKey(keydata);
-          netconfig.writeToEeprom();
+          netconfig.markUpdate();
+          //netconfig.writeToEeprom();
           Serial.printf("wrote ssid=\"%s\" and key=\"%s\" to eeprom\n",ssiddata,keydata);
           return 1;
         }
@@ -264,7 +265,8 @@
     if (webserver.hasArg("ssid") && webserver.hasArg("key")) {
       netconfig.putSsid(webserver.arg("ssid").c_str());
       netconfig.putKey(webserver.arg("key").c_str());
-      netconfig.writeToEeprom();
+      netconfig.markUpdate();
+      //netconfig.writeToEeprom();
       sprintf(buffer,"<html><h2>successfully set SSID=\"%s\", KEY=\"%s\"</h2><p>now reboot and test</html>",netconfig.getSsid(),netconfig.getKey());
       webserver.send(200, "text/html", buffer);
     } else {

@@ -78,7 +78,7 @@ s_param_t c_configitems::update_num_limited(struct s_configdesc * pcb, s_param_t
     newvalue = pcb->minval;
   }
   *(s_param_t*)p = newvalue;
-  netconfig.mark_update();
+  netconfig.markUpdate();
   return newvalue;
 }
 
@@ -88,7 +88,7 @@ void c_configitems::update_string(struct s_configdesc * pcb, const char * newstr
     uint8_t* pcfgb = (uint8_t*)netconfig.get_configblock();
     void *p = (void*)(pcfgb+pcb->offset);
     strlcpy((char*) p, newstr, pcb->maxval);
-    netconfig.mark_update();
+    netconfig.markUpdate();
   }
 }
 

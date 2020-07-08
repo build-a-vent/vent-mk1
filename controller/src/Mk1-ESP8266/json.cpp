@@ -20,6 +20,16 @@
 #include "webctrl.h"
 #include "breathe.h"
 
+int8_t c_JsonBox::command(char *cmd) {
+  if (!strcmp(cmd,"jshow")) {
+    DynamicJsonDocument Eins(1024);
+    JsonObject Rep = Eins.to<JsonObject>();
+    c_configitems::serialize_config(Rep);
+    serializeJson(Rep,Serial);
+    Serial.println();
+  }
+}
+
 void c_JsonBox::fillBroadcastPacket(JsonDocument &Doc) {
   JsonObject Obj = Doc.to<JsonObject>();
   Obj.getOrAddMember("cmd").set("status");  

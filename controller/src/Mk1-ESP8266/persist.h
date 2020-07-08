@@ -52,7 +52,7 @@
       
       void                  writeToEeprom(void);
 
-      inline void           mark_update(void) { lastupdate = millis(); }
+      inline void           markUpdate(void) { lastupdate = millis(); }
 
       inline s_configblock* get_configblock(void) { return &(this->s.configblock); }
       
@@ -61,6 +61,8 @@
       inline const char*    getKey(void)   { return this->s.pwd; }
       
       //inline uint32_t       getCks(void)     { return s.cks; }      
+      
+      void poll (bool may_write_eeprom);
   };
   
   extern c_persist netconfig;
