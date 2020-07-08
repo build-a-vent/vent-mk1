@@ -14,17 +14,22 @@
     You should have received a copy of the GNU General Public License
     along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************/
+
 #include "webctrl.h"
 #include "config.h"
 #include "persist.h"
 #include "breathe.h"
 #include "stringparser.h"
+
   
-  ESP8266WebServer server (LOCAL_HTTP_PORT);
-  c_webcontrol webcontrol; // the object with its webserver port
+  #if HAS_WEBSERVER
+    ESP8266WebServer webserver (LOCAL_HTTP_PORT);
+  #endif
+  
+  c_webcontrol webcontrol; // the webcontrol object
 
    
-   void c_webcontrol::poll(void) {
+  void c_webcontrol::poll(void) {
       int32_t now=millis();
       r2 = status;
       switch (status) {
@@ -103,17 +108,19 @@
               status = k_up3;
             }
             break;
-          case k_up3:        
-            server.on("/", HTTP_GET, handleRoot);        // Call the 'handleRoot' function when a client requests URI "/"
-            server.on("/netconf", HTTP_GET, handleNetconf);  // Call the 'handleNetconf' function when a client requests URI "/netconf"
-            server.on("/breathconfig", HTTP_GET, handleBreatheView); 
-            server.on("/netconfig", HTTP_POST, handleNetconfig);  // Call the 'handleNetconf' function when a client posts to URI "/netconfig"
-            server.on("/breathconfig", HTTP_POST, handleBreathePost);
-            server.on("/netconfig", HTTP_POST, handleNetconfig);  // Call the 'handleNetconf' function when a client posts to URI "/netconfig"
-            server.onNotFound(handleNotFound);           // When a client requests an unknown URI (i.e. something other than "/"), call function "handleNotFound"
-            Serial.println("Starting webserver");
-            server.begin();                            // Actually start the server
-            Udp.begin(LocalUdpPort);
+          case k_up3:  
+            #if HAS_WEBSERVER      
+              webserver.on("/", HTTP_GET, handleRoot);        // Call the 'handleRoot' function when a client requests URI "/"
+              webserver.on("/netconf", HTTP_GET, handleNetconf);  // Call the 'handleNetconf' function when a client requests URI "/netconf"
+              webserver.on("/breathconfig", HTTP_GET, handleBreatheView); 
+              webserver.on("/netconfig", HTTP_POST, handleNetconfig);  // Call the 'handleNetconf' function when a client posts to URI "/netconfig"
+              webserver.on("/breathconfig", HTTP_POST, handleBreathePost);
+              webserver.on("/netconfig", HTTP_POST, handleNetconfig);  // Call the 'handleNetconf' function when a client posts to URI "/netconfig"
+              webserver.onNotFound(handleNotFound);           // When a client requests an unknown URI (i.e. something other than "/"), call function "handleNotFound"
+              Serial.println("Starting webserver");
+              webserver.begin();            
+            #endif
+            Udp.begin(LOCAL_UDP_PORT);
             status = k_connect;
           }
           break;
@@ -128,7 +135,13 @@
                 Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
                 serializeJson(reply, Udp);
                 Udp.println();
-                Udp.endPacket();               
+                Udp.endPacket(); 
+                if (json_is_printing) {  
+                  --json_is_printing;
+                  Serial.print("Reply sent : ");
+                  serializeJson(reply,Serial);        
+                  Serial.println();    
+                }
               }
               /* ------------------------
               char incomingPacket[512];
@@ -153,7 +166,7 @@
               if ((int32_t)(now - lastbcast) > PERIODIC_BCAST) {  // broadcast packet every PERIODIC_BCAST millisecs         */
                 DynamicJsonDocument reply(2048);
                 Serial.println("Broadcast");
-                Udp.beginPacket(BroadcastAddr, LocalUdpPort);
+                Udp.beginPacket(BroadcastAddr, LOCAL_UDP_PORT);
                 JsonBox.fillBroadcastPacket(reply);
                 serializeJson(reply, Udp);
                 Udp.endPacket();              
@@ -166,7 +179,9 @@
                 break;
               }
             #endif
-            server.handleClient();                     // Listen for HTTP requests from clients
+            #if HAS_WEBSERVER
+              webserver.handleClient();                     // Listen for HTTP requests from clients
+            #endif
             // FIXME : check for lost connection ...
           }
           break;
@@ -213,9 +228,15 @@
           return 1;
         }
       }
-      if (!strcmp(cmd,"showbcast")) {
-        int32_t n = stack.spop();
-        if (n > 0) showbcast=n;
+      #if PERIODIC_BCAST
+        if (!strcmp(cmd,"showbcast")) {
+          int32_t n = stack.spop();
+          if (n > 0) showbcast=n;
+          return 1;
+        }
+      #endif
+      if (!strcmp(cmd,"showjson")) {
+        json_is_printing = stack.spop();
         return 1;
       }
 
@@ -225,89 +246,91 @@
     
 
 
-// ----------------------------------------- Web pages ----------------------------------------
-
-void handleRoot(void) {                          // When URI / is requested, send a web page with a button to toggle the LED
-  server.send(200, "text/html", "<form action=\"/login\" method=\"POST\">\n"
-                                "<input type=\"text\" name=\"username\" placeholder=\"Username\"></br>\n"
-                                "<input type=\"password\" name=\"password\" placeholder=\"Password\">\n"
-                                "</br><input type=\"submit\" value=\"Login\"></form>\n"
-                                "<p>Try 'John Doe' and 'password123' ...</p>");
-  server.client().stop();                               
-  Serial.println("Rootpage GET");                                
-}
-
-void handleNetconfig(void) {                          // When URI /netconfig is POSTed, try to write the WLAN params
-  char buffer[500];
-  Serial.println("Netconfpost");                                
-  if (server.hasArg("ssid") && server.hasArg("key")) {
-    netconfig.putSsid(server.arg("ssid").c_str());
-    netconfig.putKey(server.arg("key").c_str());
-    netconfig.writeToEeprom();
-    sprintf(buffer,"<html><h2>successfully set SSID=\"%s\", KEY=\"%s\"</h2><p>now reboot and test</html>",netconfig.getSsid(),netconfig.getKey());
-    server.send(200, "text/html", buffer);
-  } else {
-    server.send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
+#if HAS_WEBSERVER
+  // ----------------------------------------- Web pages ----------------------------------------
+  void handleRoot(void) {                          // When URI / is requested, send a web page with a button to toggle the LED
+    webserver.send(200, "text/html", "<form action=\"/login\" method=\"POST\">\n"
+                                  "<input type=\"text\" name=\"username\" placeholder=\"Username\"></br>\n"
+                                  "<input type=\"password\" name=\"password\" placeholder=\"Password\">\n"
+                                  "</br><input type=\"submit\" value=\"Login\"></form>\n"
+                                  "<p>Try 'John Doe' and 'password123' ...</p>");
+    webserver.client().stop();                               
+    //Serial.println("Rootpage GET");                                
   }
-  server.client().stop();                               
-}
-    
-void handleNetconf(void) {                          // When URI /netconf is GET requested, send a web page with input fields
-  char buffer[500];   
-  Serial.println("Netconf");                                
-  if (netconfig.checkCks()) {
-    sprintf(buffer,"<form action=\"/netconfig\" method=\"POST\">\n<table>"
-                   "<tr><th>SSID</th><td><input type=\"text\" name=\"ssid\" placeholder=\"SSID\" value=\"%s\" minlength=3 maxlength=31></td></tr>\n"
-                   "<tr><th>KEY</th><td><input type=\"text\" name=\"key\" placeholder=\"KEY\" value=\"%s\" maxlength=31></td></tr>\n"
-                   "<tr><th colspan=2><input type=\"submit\" value=\"netconfig\"></th></tr></table></form>\n",netconfig.getSsid(),netconfig.getKey());
-  } else {
-    sprintf(buffer,"<form action=\"/netconfig\" method=\"POST\">\n<table>"
-                   "<tr><th>SSID</th><td><input type=\"text\" name=\"ssid\" placeholder=\"SSID\" minlength=3 maxlength=31></td></tr>\n"
-                   "<tr><th>KEY</th><td><input type=\"text\" name=\"key\" placeholder=\"KEY\" maxlength=31></td></tr>\n"
-                   "<tr><th colspan=2><input type=\"submit\" value=\"netconfig\"></th></tr></table></form>\n");
-  }
-  server.send(200, "text/html", buffer);
-  server.client().stop();                               
-
-}
-
-
-
-void handleBreatheView(void) {
-  char buffer[1000];   
-  sprintf(buffer,"<form action=\"/breathconfig\" method=\"POST\">\n<table>"
-                   "<tr><th>Flowtime</th><td><input type=\"number\" name=\"flowtime\" placeholder=\"flowtime[ms]\" value=\"%d\" min=300 max=1500></td></tr>\n"
-                   "<tr><th>Inhaletime</th><td><input type=\"number\" name=\"inhtime\" placeholder=\"up to plateau[ms]\" value=\"%d\" min=300 max=2500></td></tr>\n"
-                   "<tr><th>Cycletime</th><td><input type=\"text\" name=\"cycletime\" placeholder=\"one cycle[ms]\" value=\"%d\" min=2000 max=4000></td></tr>\n"
-                   "<tr><th>Running</th><th>%s</th></tr>\n"
-                   "<tr><th colspan=2><input type=\"submit\" value=\"start\"></th></tr></table></form>\n",
-                   breathe.getFlowtime(),breathe.getPlateautime(),breathe.getCycletime(),breathe.isRunning()?"YES":"NO");
-  server.send(200, "text/html", buffer);
-  server.client().stop();                               
-}
-
-void handleBreathePost(void) {
-   char buffer[500];
-  Serial.println("BreathPost");                                
-  if (server.hasArg("flowtime") && server.hasArg("inhtime") && server.hasArg("cycletime")) {
-    s_param_t ft=server.arg("flowtime").toInt();
-    s_param_t it=server.arg("inhtime").toInt();
-    s_param_t ct=server.arg("cycletime").toInt();
-    if ((ft > 300) & (it > ft) && (ct > it)) {
-      breathe.start(ft,it,ct);
-      handleBreatheView();
+  
+  void handleNetconfig(void) {                          // When URI /netconfig is POSTed, try to write the WLAN params
+    char buffer[500];
+    //Serial.println("Netconfpost");                                
+    if (webserver.hasArg("ssid") && webserver.hasArg("key")) {
+      netconfig.putSsid(webserver.arg("ssid").c_str());
+      netconfig.putKey(webserver.arg("key").c_str());
+      netconfig.writeToEeprom();
+      sprintf(buffer,"<html><h2>successfully set SSID=\"%s\", KEY=\"%s\"</h2><p>now reboot and test</html>",netconfig.getSsid(),netconfig.getKey());
+      webserver.send(200, "text/html", buffer);
     } else {
-      server.send(400, "text/plain", "400: Invalid Data");         // The request is invalid, so send HTTP status 400
+      webserver.send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
     }
-  } else {
-    server.send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
-    server.client().stop();                               
+    webserver.client().stop();                               
   }
-}
-
-
-void handleNotFound(void){
-  server.send(404, "text/plain", "404: Not found"); // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
-  server.client().stop();                               
-
-}
+      
+  void handleNetconf(void) {                          // When URI /netconf is GET requested, send a web page with input fields
+    char buffer[500];   
+    //Serial.println("Netconf");                                
+    if (netconfig.checkCks()) {
+      sprintf(buffer,"<form action=\"/netconfig\" method=\"POST\">\n<table>"
+                     "<tr><th>SSID</th><td><input type=\"text\" name=\"ssid\" placeholder=\"SSID\" value=\"%s\" minlength=3 maxlength=31></td></tr>\n"
+                     "<tr><th>KEY</th><td><input type=\"text\" name=\"key\" placeholder=\"KEY\" value=\"%s\" maxlength=31></td></tr>\n"
+                     "<tr><th colspan=2><input type=\"submit\" value=\"netconfig\"></th></tr></table></form>\n",netconfig.getSsid(),netconfig.getKey());
+    } else {
+      sprintf(buffer,"<form action=\"/netconfig\" method=\"POST\">\n<table>"
+                     "<tr><th>SSID</th><td><input type=\"text\" name=\"ssid\" placeholder=\"SSID\" minlength=3 maxlength=31></td></tr>\n"
+                     "<tr><th>KEY</th><td><input type=\"text\" name=\"key\" placeholder=\"KEY\" maxlength=31></td></tr>\n"
+                     "<tr><th colspan=2><input type=\"submit\" value=\"netconfig\"></th></tr></table></form>\n");
+    }
+    webserver.send(200, "text/html", buffer);
+    webserver.client().stop();                               
+  
+  }
+  
+  
+  
+  void handleBreatheView(void) {
+    char buffer[1000];   
+    sprintf(buffer,"<form action=\"/breathconfig\" method=\"POST\">\n<table>"
+                     "<tr><th>Flowtime</th><td><input type=\"number\" name=\"flowtime\" placeholder=\"flowtime[ms]\" value=\"%d\" min=300 max=1500></td></tr>\n"
+                     "<tr><th>Inhaletime</th><td><input type=\"number\" name=\"inhtime\" placeholder=\"up to plateau[ms]\" value=\"%d\" min=300 max=2500></td></tr>\n"
+                     "<tr><th>Cycletime</th><td><input type=\"text\" name=\"cycletime\" placeholder=\"one cycle[ms]\" value=\"%d\" min=2000 max=4000></td></tr>\n"
+                     "<tr><th>Running</th><th>%s</th></tr>\n"
+                     "<tr><th colspan=2><input type=\"submit\" value=\"start\"></th></tr></table></form>\n",
+                     breathe.getFlowtime(),breathe.getPlateautime(),breathe.getCycletime(),breathe.isRunning()?"YES":"NO");
+    webserver.send(200, "text/html", buffer);
+    webserver.client().stop();                               
+  }
+  
+  void handleBreathePost(void) {
+    char buffer[500];
+    //Serial.println("BreathePost");                                
+    if (    webserver.hasArg("flowtime") 
+         && webserver.hasArg("inhtime") 
+         && webserver.hasArg("cycletime")) {
+      s_param_t ft=webserver.arg("flowtime").toInt();
+      s_param_t it=webserver.arg("inhtime").toInt();
+      s_param_t ct=webserver.arg("cycletime").toInt();
+      if ((ft > 300) & (it > ft) && (ct > it)) {
+        breathe.start(ft,it,ct);
+        handleBreatheView();
+      } else {
+        webserver.send(400, "text/plain", "400: Invalid Data");         // The request is invalid, so send HTTP status 400
+      }
+    } else {
+      webserver.send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
+      webserver.client().stop();                               
+    }
+  }
+  
+  
+  void handleNotFound(void){
+    webserver.send(404, "text/plain", "404: Not found"); // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
+    webserver.client().stop();                               
+  }
+#endif  

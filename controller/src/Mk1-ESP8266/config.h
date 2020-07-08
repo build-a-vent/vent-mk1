@@ -17,14 +17,18 @@
       along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
   ********************************************************************/
 
-  #define SIMULATE_VENT 1         // set to 1 to create a vent simulator without sensors or actors
-  #define PERIODIC_BCAST 0        // set to the no of milliseconds between bcasts, 0 for no bcasts
-  #define HAS_DISPLAY   0
+  #define SIMULATE_VENT  1         // set to 1 to create a vent simulator without sensors or actors
+  #define HAS_WEBSERVER  0         // set to 1 to add webserver functionality
+  #define PERIODIC_BCAST 0         // set to the no of milliseconds between bcasts, 0 for no bcasts
+  #define HAS_DISPLAY    0
   
   #include <stdint.h>
   typedef int32_t s_param_t; // SIGNED!! integer format in numeric & stack operations 
-  #define LocalUdpPort 1111
-  #define LOCAL_HTTP_PORT 80
+  #define LOCAL_UDP_PORT 1111
+  
+  #if HAS_WEBSERVER
+    #define LOCAL_HTTP_PORT 80
+  #endif
 
 // IO PINS 
 

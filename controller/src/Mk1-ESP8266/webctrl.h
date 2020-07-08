@@ -16,19 +16,22 @@
     You should have received a copy of the GNU General Public License
     along with build-a-vent.  If not, see <http://www.gnu.org/licenses/>.
 ********************************************************************/
+#include "config.h"
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
-#include <ESP8266WebServer.h>
 #include <WiFiUdp.h>
 #include "json.h"
 
-
-void handleRoot(void);
-void handleNetconf(void);
-void handleNetconfig(void);
-void handleBreatheView(void);
-void handleBreathePost(void);
-void handleNotFound(void);
+#if HAS_WEBSERVER
+  #include <ESP8266WebServer.h>
+  // fwd dcl of webserver handler routines
+  void handleRoot(void);
+  void handleNetconf(void);
+  void handleNetconfig(void);
+  void handleBreatheView(void);
+  void handleBreathePost(void);
+  void handleNotFound(void);
+#endif
 
 
 class c_webcontrol {
@@ -51,6 +54,7 @@ class c_webcontrol {
     int32_t          lastbcast;
     int32_t          longestop{0};
     int32_t          showbcast{0};
+    int32_t          json_is_printing{0};
     WiFiUDP          Udp;
     IPAddress        MyAddr;
     IPAddress        Netmask;
@@ -58,8 +62,6 @@ class c_webcontrol {
     byte             mac[6];                     // the MAC address of your Wifi shield
     String           ApName; 
     String           MacId;
-
-    //ESP8266WebServer &server;    // ref to the web server object, passed in ctor
 
 
   public:
