@@ -27,7 +27,9 @@ int8_t c_JsonBox::command(char *cmd) {
     c_configitems::serialize_config(Rep);
     serializeJson(Rep,Serial);
     Serial.println();
+    return 1;
   }
+  return 0;
 }
 
 void c_JsonBox::fillBroadcastPacket(JsonDocument &Doc) {

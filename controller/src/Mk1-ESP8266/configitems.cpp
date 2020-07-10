@@ -18,6 +18,8 @@
 #include "configitems.h"
 #include "config.h"
 #include "persist.h"
+#include "pstk.h"
+#include "stringparser.h"
 #include <ArduinoJson.h>
 
 
@@ -89,8 +91,9 @@ void c_configitems::update_string(struct s_configdesc * pcb, const char * newstr
     void *p = (void*)(pcfgb+pcb->offset);
     strlcpy((char*) p, newstr, pcb->maxval);
     netconfig.markUpdate();
-  }
+  } // FIXME errorhandling numeric
 }
+
 
 void c_configitems::initialize(void){
   uint8_t* pcfgb = (uint8_t*)netconfig.get_configblock();
@@ -117,4 +120,45 @@ bool c_configitems::verify_post_load(void){
   }
   return true;
 }
+
+
+
+int8_t c_configitems::command(const char *cmd) {
+  if (!strcmp(cmd,"cfgval")) { 
+    const char *varname = stringparser.stkget();
+    if (varname) {
+      struct s_configdesc * pvar = get_cfgdesc_by_name(varname);
+      if (pvar) {
+        if (pvar->isnum) {
+          s_param_t val = stack.spop();
+          update_num_limited(pvar,val);
+          Serial.print("setting ");
+          Serial.print(pvar->name);
+          Serial.print(" (numeric) = ");
+          Serial.println(val);
+          return 1;
+        } else {
+          const char * value = stringparser.stkget();
+          if (value) {
+            update_string(pvar,value);
+          Serial.print("setting ");
+          Serial.print(pvar->name);
+          Serial.print(" (string) = ");
+          Serial.println(value);
+            return 1;
+          } else {
+          }
+        }
+      } else {        
+        Serial.print("no cfg variable ");
+        Serial.println(varname);
+      }
+    } else {
+      Serial.println("no cfg var name given ");
+    }
+    return -1;
+  }
+  return 0;
+}
+
   

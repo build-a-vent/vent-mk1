@@ -82,9 +82,7 @@ class c_webcontrol {
 
     void poll(void);
     int8_t command(char * cmd);
-    
-    // forward declarations for web page handlers
-    
+        
 
 };
 

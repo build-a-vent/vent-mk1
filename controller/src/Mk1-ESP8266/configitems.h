@@ -63,7 +63,9 @@ class c_configitems {
     static void        update_string(struct s_configdesc * pcb, const char * newstr);
     static uint8_t     serialize_config(JsonObject &Obj);
     static void        initialize(void);
-    static bool       verify_post_load(void);
+    static bool        verify_post_load(void);
+    static int8_t      command(const char *cmd);
+
 
 };
 

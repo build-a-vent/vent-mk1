@@ -69,6 +69,7 @@ class thermocontrol_2p {
                    k_fail         = 4,
                    k_restart      = 5
                  } kState;
+
     void setheater(bool v) {
       heateron = v;
       digitalWrite(pwrPin,v ? HIGH : LOW);
@@ -150,6 +151,11 @@ class thermocontrol_2p {
 
       if (!strcmp(cmd,"tempshow")) { 
         this->show();
+        lastprint = millis();
+
+        printcount = stack.spop();
+        if (printcount < 0) printcount = 0;
+        
         return 1; 
       }
       
@@ -215,6 +221,14 @@ class thermocontrol_2p {
         case k_init :
           setheater(false);
           state=k_start;
+      } // end case
+      //
+      // print heater status if enabled by tempshow
+      //
+      if (printcount && ((now - lastprint) > 4000)) {
+        show();
+        --printcount;
+        lastprint=now;
       }
     }
 
@@ -229,6 +243,9 @@ class thermocontrol_2p {
     int16_t              c_tempBottleAlert; // Bottle alert temperature
     int16_t              c_tempBottleSet;   // Bottle Temp Setpoint    
     int32_t              nextstep; // when does the next operation take part        
+    int32_t              lastprint  = {0};                 
+    int32_t              printcount = {0};                 
+
     bool                 heateron;
   
 }; // end class

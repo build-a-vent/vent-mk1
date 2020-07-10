@@ -104,6 +104,8 @@ double     LastP=(0.0);
 bool       PressAvail(false);
 int32_t   NowMillis(0);
 int32_t   LastPrintTime(0);
+s_param_t RunsSinceCounter(0);
+s_param_t RunsSinceMillis(0);
 
 
 
@@ -137,7 +139,8 @@ void setup()
     #endif
   }
   
-  NowMillis = LastPrintTime = millis();
+  NowMillis = LastPrintTime = RunsSinceMillis = millis();
+  RunsSinceCounter=0;
   netconfig.readFromEeprom();
 
   webcontrol.setup();
@@ -200,15 +203,21 @@ void BigStatusReading() {
 
 uint8_t wplist(char *c, uint8_t len) {
   uint8_t rc;
-  if ((rc=stack.command(c)) != 0)        return rc;
-  if ((rc=airsource.command(c)) != 0)    return rc;
-  if ((rc=calibrator.command(c)) != 0)   return rc;
-  if ((rc=outflow.command(c)) != 0)      return rc;
-  if ((rc=breathe.command(c)) != 0)      return rc;
-  if ((rc=webcontrol.command(c)) != 0)   return rc;
-  if ((rc=stringparser.command(c)) != 0) return rc;
-  if ((rc=Heater.command(c)) != 0)       return rc;
-  if ((rc=JsonBox.command(c)) != 0)      return rc;
+  if ((rc=stack.command(c)) != 0)          return rc;
+  if ((rc=airsource.command(c)) != 0)      return rc;
+  if ((rc=calibrator.command(c)) != 0)     return rc;
+  if ((rc=outflow.command(c)) != 0)        return rc;
+  if ((rc=breathe.command(c)) != 0)        return rc;
+  if ((rc=webcontrol.command(c)) != 0)     return rc;
+  if ((rc=stringparser.command(c)) != 0)   return rc;
+  if ((rc=Heater.command(c)) != 0)         return rc;
+  if ((rc=JsonBox.command(c)) != 0)        return rc;
+  if ((rc=c_configitems::command(c)) != 0) return rc;
+  if (!strcmp(c,"runs_since")) {
+    Serial.print("Runs since = ");
+    Serial.print(RunsSinceCounter);
+    return 1;
+  }
   return 0;
 }
 
@@ -258,13 +267,19 @@ void loop()
   if (!breathe.iscritical()) {
     // here we might do possibliy time-consuming ops (max 100ms!!)
     int32_t now=millis();
+    while ((now - RunsSinceMillis) > 1000) {
+      RunsSinceMillis += 1000;
+      RunsSinceCounter++;
+    }
+  
+
     Heater.poll();
     
     if ((now - LastPrintTime) > 4000) {
       //
       // just to see some signs of life ...
       //
-      BigStatusReading();
+      //BigStatusReading();
       LastPrintTime=now;
       BreathSensor.recalibrate(); // update temp reading
     }  
