@@ -194,12 +194,25 @@ void BigStatusReading() {
   }    
 }
 
-//
+
 //
 // here comes command interpretation 
 // add new object's command methods here
 //
 
+
+// commands interpreted by this module
+
+uint8_t main_command(const char * const c) {
+  if (!strcmp(c,"runs_since")) {
+    Serial.print("Runs since = ");
+    Serial.print(RunsSinceCounter);
+    return 1;
+  }
+  return 0;
+}
+
+// command interpreter collection
 
 uint8_t wplist(char *c, uint8_t len) {
   uint8_t rc;
@@ -213,11 +226,7 @@ uint8_t wplist(char *c, uint8_t len) {
   if ((rc=Heater.command(c)) != 0)         return rc;
   if ((rc=JsonBox.command(c)) != 0)        return rc;
   if ((rc=c_configitems::command(c)) != 0) return rc;
-  if (!strcmp(c,"runs_since")) {
-    Serial.print("Runs since = ");
-    Serial.print(RunsSinceCounter);
-    return 1;
-  }
+  if ((rc=main_command(c)) != 0)           return rc;
   return 0;
 }
 

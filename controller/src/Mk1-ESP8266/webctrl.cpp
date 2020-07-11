@@ -130,36 +130,32 @@
               DynamicJsonDocument reply(2048);
               DynamicJsonDocument request(2048);
               deserializeJson(request,Udp);
+              if (netshowrx) {
+                --netshowrx;
+                Serial.print("NET RX from ");
+                Serial.print(Udp.remoteIP().toString());
+                Serial.print(" to ");
+                Serial.print(Udp.destinationIP().toString());
+                Serial.print(", data : ");
+                serializeJson(request,Serial);        
+                Serial.println();    
+              }
+
+
+              
               JsonBox.handleIncoming(reply,request);
               if (!reply.isNull()) {
                 Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
                 serializeJson(reply, Udp);
                 Udp.println();
                 Udp.endPacket(); 
-                if (json_is_printing) {  
-                  --json_is_printing;
+                if (netshowtx) {  
+                  --netshowtx;
                   Serial.print("Reply sent : ");
                   serializeJson(reply,Serial);        
                   Serial.println();    
                 }
               }
-              /* ------------------------
-              char incomingPacket[512];
-              sprintf(incomingPacket,"Received %d bytes from %s, port %d", packetSize, Udp.remoteIP().toString().c_str(), Udp.remotePort());
-              Serial.println(incomingPacket);
-              int len = Udp.read(incomingPacket, 200);
-              if (len > 0)
-              {
-                incomingPacket[len] = '\0';
-                Serial.println(incomingPacket);
-                if (strncmp(incomingPacket,"ACK:",4) != 0) { // do not reply to ACKs
-                  strcat(incomingPacket,":AllnsOkHierBeiUns");
-                  Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-                  Udp.write(incomingPacket, strlen(incomingPacket)+1);
-                  Udp.endPacket();
-                }
-              }
-              ------------------ */
               break;
             }
             #if PERIODIC_BCAST
@@ -236,8 +232,12 @@
           return 1;
         }
       #endif
-      if (!strcmp(cmd,"showjson")) {
-        json_is_printing = stack.spop();
+      if (!strcmp(cmd,"netshowrx")) {
+        netshowrx = stack.spop();
+        return 1;
+      }
+      if (!strcmp(cmd,"netshowtx")) {
+        netshowtx = stack.spop();
         return 1;
       }
 

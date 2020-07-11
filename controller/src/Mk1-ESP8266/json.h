@@ -24,7 +24,7 @@
   
       void handleIncoming(JsonDocument &Reply,JsonDocument &Request);
       void fillBroadcastPacket(JsonDocument &Doc);
-      int8_t command(char *cmd);
+      int8_t command(const char * const cmd);
 
 
   };

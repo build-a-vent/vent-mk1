@@ -54,7 +54,8 @@ class c_webcontrol {
     int32_t          lastbcast;
     int32_t          longestop{0};
     int32_t          showbcast{0};
-    int32_t          json_is_printing{0};
+    int32_t          netshowrx{0};
+    int32_t          netshowtx{0};
     WiFiUDP          Udp;
     IPAddress        MyAddr;
     IPAddress        Netmask;

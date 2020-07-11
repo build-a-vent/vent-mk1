@@ -20,7 +20,7 @@
 #include "webctrl.h"
 #include "breathe.h"
 
-int8_t c_JsonBox::command(char *cmd) {
+int8_t c_JsonBox::command(const char * const cmd) {
   if (!strcmp(cmd,"jshow")) {
     DynamicJsonDocument Eins(1024);
     JsonObject Rep = Eins.to<JsonObject>();
