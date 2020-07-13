@@ -42,7 +42,7 @@
     public:
       void                  putSsid(const char * n);
       
-      void                  putKey(const char * n);
+      void                  putPwd(const char * n);
       
       bool                  checkCks(void);
       
@@ -51,6 +51,10 @@
       bool                  readFromEeprom(void);
       
       void                  writeToEeprom(void);
+
+      void                  eeflush(void);
+
+      int8_t                command(const char * const);
 
       inline void           markUpdate(void) { lastupdate = millis(); }
 

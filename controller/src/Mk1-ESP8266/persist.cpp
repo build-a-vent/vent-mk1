@@ -28,13 +28,17 @@ uint32_t c_persist::cks_config(uint8_t *p, uint16_t size) {
 }
   
 void c_persist::putSsid(const char * n) {
-  s.ssid[SLEN-1]=0;
-  strncpy(s.ssid,n,SLEN-1);
+  if (strcmp(n,s.ssid)) {
+    strlcpy(s.ssid,n,SLEN);
+    markUpdate();
+  }
 }      
 
-void c_persist::putKey(const char * n) {
-  s.pwd[SLEN-1]=0;
-  strncpy(s.pwd,n,SLEN-1);
+void c_persist::putPwd(const char * n) {
+  if (strcmp(n,s.pwd)) {
+    strlcpy(s.pwd,n,SLEN);
+    markUpdate();
+  }
 }      
  
 uint32_t c_persist::calcCks(void) {
@@ -75,6 +79,10 @@ void c_persist::writeToEeprom(void) {
   lastsaved = lastupdate; // not dirty
 }
 
+void c_persist::eeflush(void) {
+  if (lastsaved != lastupdate) { writeToEeprom(); }
+}
+
 void c_persist::poll(bool maywrite) {
   if (maywrite && (lastsaved != lastupdate)) {
     int32_t now = millis();    
@@ -83,6 +91,15 @@ void c_persist::poll(bool maywrite) {
       writeToEeprom();
     }
   }
+}
+
+int8_t c_persist::command(const char * const cmd) {
+  if (!strcmp (cmd,"eeflush")) {
+    netconfig.eeflush();
+    Serial.println("EEprom flushed");
+    return 1;
+  }
+  return 0;
 }
 
 c_persist netconfig;

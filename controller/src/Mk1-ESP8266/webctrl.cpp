@@ -218,10 +218,8 @@
 
         if ((keydata != NULL) && (ssiddata != NULL)) {
           netconfig.putSsid(ssiddata);
-          netconfig.putKey(keydata);
-          netconfig.markUpdate();
-          //netconfig.writeToEeprom();
-          Serial.printf("wrote ssid=\"%s\" and key=\"%s\" to eeprom\n",ssiddata,keydata);
+          netconfig.putPwd(keydata);
+          Serial.printf("marked new ssid=\"%s\" and key=\"%s\" to eeprom\n",ssiddata,keydata);
           return 1;
         }
       }

@@ -63,9 +63,6 @@ uint8_t c_configitems::serialize_config(JsonObject &Obj) {
     } else {
       char *text = (char *)p;
       Obj.getOrAddMember(configdesc[i].name).set(text);
-      //Serial.print(configdesc[i].name);
-      //Serial.print(" ");
-      //Serial.println(text);
     }
   }
 }
@@ -79,8 +76,10 @@ s_param_t c_configitems::update_num_limited(struct s_configdesc * pcb, s_param_t
   if (newvalue < pcb->minval) {
     newvalue = pcb->minval;
   }
-  *(s_param_t*)p = newvalue;
-  netconfig.markUpdate();
+  if (*(s_param_t*)p != newvalue) {
+    *(s_param_t*)p = newvalue;
+    netconfig.markUpdate();
+  }
   return newvalue;
 }
 
@@ -89,9 +88,11 @@ void c_configitems::update_string(struct s_configdesc * pcb, const char * newstr
   if (!is_numeric(pcb)) {
     uint8_t* pcfgb = (uint8_t*)netconfig.get_configblock();
     void *p = (void*)(pcfgb+pcb->offset);
-    strlcpy((char*) p, newstr, pcb->maxval);
-    netconfig.markUpdate();
-  } // FIXME errorhandling numeric
+    if (strcmp((char*)p,newstr)) {
+      strlcpy((char*) p, newstr, pcb->maxval);
+      netconfig.markUpdate();
+    }
+  }
 }
 
 
