@@ -226,8 +226,8 @@ uint8_t wplist(char *c, uint8_t len) {
   if ((rc=Heater.command(c)) != 0)         return rc;
   if ((rc=JsonBox.command(c)) != 0)        return rc;
   if ((rc=c_configitems::command(c)) != 0) return rc;
-  if ((rc=main_command(c)) != 0)           return rc;
   if ((rc=netconfig.command(c)) != 0)      return rc;
+  if ((rc=main_command(c)) != 0)           return rc;
   return 0;
 }
 

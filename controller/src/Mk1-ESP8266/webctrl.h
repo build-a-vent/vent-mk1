@@ -81,6 +81,10 @@ class c_webcontrol {
         Obj.getOrAddMember("mac").set(MacId);
     }
 
+    inline bool verify_mac(const char *json_mac) {
+      return !strcmp(json_mac,MacId.c_str());
+    }
+
     void poll(void);
     int8_t command(char * cmd);
         

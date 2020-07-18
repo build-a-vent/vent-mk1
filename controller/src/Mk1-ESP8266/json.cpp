@@ -42,32 +42,58 @@ void c_JsonBox::fillBroadcastPacket(JsonDocument &Doc) {
 
 void c_JsonBox::handleIncoming(JsonDocument &Reply, JsonDocument &Request) {
   JsonObject ObjReq = Request.as<JsonObject>();
+  JsonObject RepO = Reply.to<JsonObject>();
   const char* cmd = ObjReq["cmd"];
   if (!strcmp("scan",cmd)) {
     ObjReq.getOrAddMember("req").set(cmd);
     fillBroadcastPacket(Reply);
     return;
   }
-  if (!strcmp("set",cmd)) {
-    serializeJson(Request,Serial);
-    JsonObject RepO = Reply.to<JsonObject>();
-    webcontrol.add_json(RepO);
-    RepO.getOrAddMember("cmd").set("ack");
-    RepO.getOrAddMember("req").set(cmd);
-    for (JsonPair kv : ObjReq) {
-      const char * argname = kv.key().c_str();
-      struct s_configdesc *pcd = c_configitems::get_cfgdesc_by_name(argname);
-      if (pcd) { // this param exists
-        if (c_configitems::is_numeric(pcd)) {
-          s_param_t val = kv.value().as<int>();
-          Serial.println("Update "+String(argname)+" to " + String(val));
-          s_param_t rc = c_configitems::update_num_limited(pcd,val);
-          RepO.getOrAddMember(argname).set(rc);
-
-        } else {
-          const char * nv = kv.value().as<char*>();
-          c_configitems::update_string(pcd,nv);
+  // all following commands require the correct mac sent by the Android app
+  const char* jmac = ObjReq["mac"];
+  if (jmac) {
+    if (webcontrol.verify_mac(jmac)) {
+      if (!strcmp("set",cmd)) {
+        serializeJson(Request,Serial);
+        webcontrol.add_json(RepO);
+        RepO.getOrAddMember("cmd").set("ack");
+        RepO.getOrAddMember("req").set(cmd);
+        for (JsonPair kv : ObjReq) {
+          const char * argname = kv.key().c_str();
+          struct s_configdesc *pcd = c_configitems::get_cfgdesc_by_name(argname);
+          if (pcd) { // this param exists
+            if (c_configitems::is_numeric(pcd)) {
+              s_param_t val = kv.value().as<int>();
+              Serial.println("Update "+String(argname)+" to " + String(val));
+              s_param_t rc = c_configitems::update_num_limited(pcd,val);
+              RepO.getOrAddMember(argname).set(rc);
+    
+            } else {
+              const char * nv = kv.value().as<char*>();
+              c_configitems::update_string(pcd,nv);
+            }
+          }
         }
+      }
+      if (!strcmp("configmode",cmd)) {
+        //Breather.configmode();
+        Serial.println ("Seeing configmode");
+        RepO.getOrAddMember("req").set(cmd);
+        RepO.getOrAddMember("mac").set(jmac);
+        RepO.getOrAddMember("cmd").set("configuring");
+      }
+      if (!strcmp("valvecfg",cmd)) {
+        //Breather.valvecfg(ObjReq["action"]);
+        Serial.println ("Seeing valvecfg");
+        RepO.getOrAddMember("req").set(cmd);
+        RepO.getOrAddMember("mac").set(jmac);
+        RepO.getOrAddMember("cmd").set("valverun");
+      }
+      if (!strcmp("config",cmd)) {
+        Serial.println ("Seeing config");
+        RepO.getOrAddMember("req").set(cmd);
+        RepO.getOrAddMember("mac").set(jmac);
+        RepO.getOrAddMember("cmd").set("configack");
       }
     }
   }
