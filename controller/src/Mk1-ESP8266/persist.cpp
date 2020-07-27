@@ -26,18 +26,23 @@ uint32_t c_persist::cks_config(uint8_t *p, uint16_t size) {
   }
   return accu;
 }
-  
+
+
 void c_persist::putSsid(const char * n) {
-  if (strcmp(n,s.ssid)) {
-    strlcpy(s.ssid,n,SLEN);
-    markUpdate();
+  s_configdesc * cdesc = c_configitems::get_cfgdesc_by_name("c_ssid");
+  if (cdesc) {
+    c_configitems::update_string(cdesc,n);
+  } else {
+    Serial.println("c_persist::putSsid : no c_ssid item in config");
   }
 }      
 
 void c_persist::putPwd(const char * n) {
-  if (strcmp(n,s.pwd)) {
-    strlcpy(s.pwd,n,SLEN);
-    markUpdate();
+  s_configdesc * cdesc = c_configitems::get_cfgdesc_by_name("c_passwd");
+  if (cdesc) {
+    c_configitems::update_string(cdesc,n);
+  } else {
+    Serial.println("c_persist::putPwd : no c_passwd item in config");
   }
 }      
  

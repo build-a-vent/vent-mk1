@@ -23,10 +23,10 @@
     #define SLEN 40
 
     struct saveables {
-      char ssid[SLEN];
-      char pwd[SLEN];
+      //char ssid[SLEN];
+      //char pwd[SLEN];
       s_configblock configblock;
-      // places additional configurable items here !
+      // put configureables into configblock
       uint32_t cks;
     };
 
@@ -60,11 +60,11 @@
 
       inline s_configblock* get_configblock(void) { return &(this->s.configblock); }
       
-      inline const char*    getSsid(void)  { return this->s.ssid; }
+      inline const char *   getSsid(void) { return c_configitems::getStringByName("c_ssid"); }
 
-      inline const char*    getKey(void)   { return this->s.pwd; }
+      inline const char *   getKey(void) { return c_configitems::getStringByName("c_passwd"); }
       
-      //inline uint32_t       getCks(void)     { return s.cks; }      
+      //inline uint32_t     getCks(void)     { return s.cks; }      
       
       void poll (bool may_write_eeprom);
   };

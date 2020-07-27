@@ -21,6 +21,7 @@
   #define HAS_WEBSERVER              0 // set to 1 to add webserver functionality
   #define PERIODIC_BCAST             0 // set to the no of milliseconds between bcasts, 0 for no bcasts
   #define HAS_DISPLAY                0
+  #define USE_SYNONYMES              1 // allow json synonymes
   #define LASTUPDATE_TO_WRITE_MS 30000 // 30 sec after last update EEPROM will be written
   
   #include <stdint.h>

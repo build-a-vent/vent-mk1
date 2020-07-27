@@ -21,8 +21,7 @@
 #include <cstddef>
 #include <ArduinoJson.h>
 
-
-  #define CFGNAMELEN 16
+  #define PERSISTCFG_NAMELEN 30
 
    // configuration data in FLASH storage  
 
@@ -33,15 +32,16 @@
     s_param_t c_lep;     // config lowest exspir press alarm mbar
     s_param_t c_flair;   // config flow rate air     ml/sec
     s_param_t c_flo2;    // config flow rate o2      ml/sec
-    
+    s_param_t c_intair;  // config flow rate air when applied in 10x100ms
+    s_param_t c_into2;   // config flow rate o2 when applied in 10x100ms
     s_param_t c_airt;    // config per-cycle air open time ms
     s_param_t c_o2t;     // config per-cycle o2 open time  ms
     s_param_t c_inspt;   // config per cycle inspir. time  ms
-    s_param_t c_cyclt;   // config cycle time ms
-    
+    s_param_t c_cyclt;   // config cycle time ms    
     s_param_t c_wtemp;   // config water temperature degC
-
-    char      c_name[CFGNAMELEN]; // config : vent name
+    char      c_name  [PERSISTCFG_NAMELEN]; // config : vent name
+    char      c_ssid  [PERSISTCFG_NAMELEN]; // configured ssid
+    char      c_passwd[PERSISTCFG_NAMELEN]; // configured wlan password
   };
 
 struct s_configdesc {
@@ -49,7 +49,10 @@ struct s_configdesc {
     uint16_t  offset;
     s_param_t minval;
     s_param_t maxval; 
-    bool      isnum;   
+    bool      isnum;  
+    bool      isinscan; // shows up in scan
+    bool      canset;   // is set-able
+    bool      cancfg;   // is config-urable 
 };
 
 #define CFGOFFS(EXP) (offsetof(struct s_configblock,EXP  ))
@@ -57,14 +60,17 @@ struct s_configdesc {
 class c_configitems {
   private: 
   public:
-    static struct      s_configdesc * get_cfgdesc_by_name(const char * const pname);
-    inline static bool is_numeric(struct s_configdesc * pcb) { return pcb->isnum; }
-    static s_param_t   update_num_limited(struct s_configdesc * pcb, s_param_t newvalue);
-    static void        update_string(struct s_configdesc * pcb, const char * newstr);
-    static uint8_t     serialize_config(JsonObject &Obj);
-    static void        initialize(void);
-    static bool        verify_post_load(void);
-    static int8_t      command(const char *cmd);
+    static struct       s_configdesc * get_cfgdesc_by_name(const char * const pname);
+    inline static bool  is_numeric(struct s_configdesc * pcb) { return pcb->isnum; }
+    static s_param_t    update_num_limited(struct s_configdesc * pcb, s_param_t newvalue);
+    static void         update_string(struct s_configdesc * pcb, const char * newstr);
+    static uint8_t      serialize_scan(JsonObject &Obj);
+    static uint8_t      serialize_all(JsonObject &Obj);
+    static void         initialize(void);
+    static bool         verify_post_load(void);
+    static int8_t       command(const char *cmd);
+    static const char * getStringByName(const char * name);
+
 
 
 };

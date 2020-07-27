@@ -26,22 +26,49 @@
 #define CFGDESC_M(EXP) #EXP, CFGOFFS(EXP)
 
 static struct s_configdesc configdesc[] = {
-      { CFGDESC_M(c_pip),          20, 60, true },
-      { CFGDESC_M(c_lip),        -10,  40, true },
-      { CFGDESC_M(c_pep),          5,  30, true },
-      { CFGDESC_M(c_lep),         -5,  30, true },
-      { CFGDESC_M(c_flair),     400, 1500, true },
-      { CFGDESC_M(c_flo2),      400, 1500, true },
-      { CFGDESC_M(c_airt),        0, 1300, true },
-      { CFGDESC_M(c_o2t),         0, 1300, true },
-      { CFGDESC_M(c_inspt),     600, 2600, true },
-      { CFGDESC_M(c_cyclt),    2000, 4000, true },
-      { CFGDESC_M(c_wtemp),      20,   44, true },
-      { CFGDESC_M(c_name),        1,   15, false},
-      { NULL,sizeof(s_configblock),1,  15, false}      
+      { CFGDESC_M(c_pip),          20, 60,                     true,  true,  true,  false },
+      { CFGDESC_M(c_lip),         -10,  40,                    true,  true,  true,  false },
+      { CFGDESC_M(c_pep),           5,  30,                    true,  true,  true,  false },
+      { CFGDESC_M(c_lep),          -5,  30,                    true,  true,  true,  false },
+      { CFGDESC_M(c_flair),       400, 1500,                   true,  true,  true,  false },
+      { CFGDESC_M(c_flo2),        400, 1500,                   true,  true,  true,  false },
+      { CFGDESC_M(c_intair),      400, 1500,                   true,  true,  true,  false },
+      { CFGDESC_M(c_into2),       400, 1500,                   true,  true,  true,  false },
+      { CFGDESC_M(c_airt),          0, 1300,                   true,  true,  true,  false },
+      { CFGDESC_M(c_o2t),           0, 1300,                   true,  true,  true,  false },
+      { CFGDESC_M(c_inspt),       600, 2600,                   true,  true,  true,  false },
+      { CFGDESC_M(c_cyclt),      2000, 4000,                   true,  true,  true,  false },
+      { CFGDESC_M(c_wtemp),        20,   44,                   true,  true,  true,  false },
+      { CFGDESC_M(c_name),          1,   PERSISTCFG_NAMELEN-1, false, true,  true,  false },
+      { CFGDESC_M(c_ssid),          1,   PERSISTCFG_NAMELEN-1, false, true,  true,  false },
+      { CFGDESC_M(c_passwd),        1,   PERSISTCFG_NAMELEN-1, false, true,  true,  false },
+      { NULL,sizeof(s_configblock), 0,    0, false, true, true, false}      
   };
 
+#if USE_SYNONYMES
+  static struct synonyme {
+    const char *inname, *outname;
+  } synonymetable[] = {
+    { "ventname","c_name" },
+    { "c_int2t","c_into2" },
+    { NULL,NULL }
+  };
+#endif
+
 struct s_configdesc * c_configitems::get_cfgdesc_by_name(const char * const pname) {
+  #if USE_SYNONYMES
+    for (uint8_t syn=0; NULL!=synonymetable[syn].inname; ++syn) {
+      if (!strcmp(pname,synonymetable[syn].inname)) {
+        const char *synname = synonymetable[syn].outname;
+        for (uint8_t i=0; configdesc[i].name!=NULL;++i) {
+          if (!strcmp(synname,configdesc[i].name)) {
+            return &configdesc[i];
+          }
+        }
+      }
+    }
+    // now check for non-synonyme
+  #endif
   for (uint8_t i=0; configdesc[i].name!=NULL;++i) {
     if (!strcmp(pname,configdesc[i].name)) {
       return &configdesc[i];
@@ -50,7 +77,26 @@ struct s_configdesc * c_configitems::get_cfgdesc_by_name(const char * const pnam
   return NULL; // not found
 }
 
-uint8_t c_configitems::serialize_config(JsonObject &Obj) {
+uint8_t c_configitems::serialize_scan(JsonObject &Obj) {
+  uint8_t* pcfgb = (uint8_t*)netconfig.get_configblock();
+  for (uint8_t i=0; configdesc[i].name!=NULL;++i) {
+    void *p = (void*)(pcfgb+configdesc[i].offset);
+    if (configdesc[i].isinscan) {
+      if (configdesc[i].isnum) {
+        s_param_t val = *(s_param_t*)p;
+        Obj.getOrAddMember(configdesc[i].name).set(val);
+        //Serial.print(configdesc[i].name);
+        //Serial.print(" ");
+        //Serial.println(val);
+      } else {
+        char *text = (char *)p;
+        Obj.getOrAddMember(configdesc[i].name).set(text);
+      }
+    }
+  }
+}
+
+uint8_t c_configitems::serialize_all(JsonObject &Obj) {
   uint8_t* pcfgb = (uint8_t*)netconfig.get_configblock();
   for (uint8_t i=0; configdesc[i].name!=NULL;++i) {
     void *p = (void*)(pcfgb+configdesc[i].offset);
@@ -95,13 +141,25 @@ void c_configitems::update_string(struct s_configdesc * pcb, const char * newstr
   }
 }
 
+const char * c_configitems::getStringByName(const char * name) {
+  struct s_configdesc * ccfg = get_cfgdesc_by_name(name);
+  if (ccfg) {
+    if (!is_numeric(ccfg)) {
+      uint8_t* pcfgb = (uint8_t*)netconfig.get_configblock();
+      void *p = (void*)(pcfgb+ccfg->offset);
+      return (const char *)p;
+    }
+  }
+  return NULL;
+}
+
 
 void c_configitems::initialize(void){
   uint8_t* pcfgb = (uint8_t*)netconfig.get_configblock();
   for (uint8_t i=0; configdesc[i].name!=NULL;++i) {
     void *p = (void*)(pcfgb+configdesc[i].offset);
     if (configdesc[i].isnum) {
-      *(s_param_t*)p = configdesc[i].maxval;
+      *(s_param_t*)p = (configdesc[i].maxval+configdesc[i].minval/2);
     } else {
       strlcpy((char *)p,"??",5);
     }

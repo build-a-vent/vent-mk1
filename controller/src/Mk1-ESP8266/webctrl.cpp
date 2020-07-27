@@ -48,7 +48,7 @@
             WiFi.begin(netconfig.getSsid(),netconfig.getKey());   // configure the Wi-Fi network you want to connect to
             status=k_start1;
           } else {
-            Serial.println("no net configured or damaged, passing to AP mode");
+            Serial.println("config checksum fail, no netinfo, starting AP");
             status=k_start1;
           }
           break;

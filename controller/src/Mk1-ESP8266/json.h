@@ -19,9 +19,9 @@
 #include <ArduinoJson.h>
 
   class c_JsonBox {
+    int saveConfigurables(JsonObject &ReplyObj, JsonObject &SrcObj);
     public:
       c_JsonBox() {};
-  
       void handleIncoming(JsonDocument &Reply,JsonDocument &Request);
       void fillBroadcastPacket(JsonDocument &Doc);
       int8_t command(const char * const cmd);

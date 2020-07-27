@@ -205,8 +205,8 @@ void BigStatusReading() {
 
 uint8_t main_command(const char * const c) {
   if (!strcmp(c,"runs_since")) {
-    Serial.print("Runs since = ");
-    Serial.print(RunsSinceCounter);
+    Serial.print("runs since = ");
+    Serial.println(RunsSinceCounter);
     return 1;
   }
   return 0;

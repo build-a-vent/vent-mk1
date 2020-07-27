@@ -24,7 +24,7 @@ int8_t c_JsonBox::command(const char * const cmd) {
   if (!strcmp(cmd,"jshow")) {
     DynamicJsonDocument Eins(1024);
     JsonObject Rep = Eins.to<JsonObject>();
-    c_configitems::serialize_config(Rep);
+    c_configitems::serialize_all(Rep);
     serializeJson(Rep,Serial);
     Serial.println();
     return 1;
@@ -35,10 +35,32 @@ int8_t c_JsonBox::command(const char * const cmd) {
 void c_JsonBox::fillBroadcastPacket(JsonDocument &Doc) {
   JsonObject Obj = Doc.to<JsonObject>();
   Obj.getOrAddMember("cmd").set("status");  
-  c_configitems::serialize_config(Obj);
+  c_configitems::serialize_scan(Obj);
   webcontrol.add_json(Obj);
   breathe.add_current_status(Obj);
 }
+
+int c_JsonBox::saveConfigurables(JsonObject &ReplyObj, JsonObject &SrcObj) {
+  int count=0;
+  for (JsonPair kv : SrcObj) {
+    const char * argname = kv.key().c_str();
+    struct s_configdesc *pcd = c_configitems::get_cfgdesc_by_name(argname);
+    if (pcd) { // this param exists
+      ++count;
+      if (c_configitems::is_numeric(pcd)) {
+        s_param_t val = kv.value().as<int>();
+        Serial.println("Update "+String(argname)+" to " + String(val));
+        s_param_t rc = c_configitems::update_num_limited(pcd,val);
+        ReplyObj.getOrAddMember(argname).set(rc);
+      } else {
+        const char * nv = kv.value().as<char*>();
+        c_configitems::update_string(pcd,nv);
+      }
+    }
+  }
+  return count;
+}
+
 
 void c_JsonBox::handleIncoming(JsonDocument &Reply, JsonDocument &Request) {
   JsonObject ObjReq = Request.as<JsonObject>();
@@ -54,10 +76,11 @@ void c_JsonBox::handleIncoming(JsonDocument &Reply, JsonDocument &Request) {
   if (jmac) {
     if (webcontrol.verify_mac(jmac)) {
       if (!strcmp("set",cmd)) {
-        serializeJson(Request,Serial);
+        //serializeJson(Request,Serial);
         webcontrol.add_json(RepO);
         RepO.getOrAddMember("cmd").set("ack");
         RepO.getOrAddMember("req").set(cmd);
+        #if 0
         for (JsonPair kv : ObjReq) {
           const char * argname = kv.key().c_str();
           struct s_configdesc *pcd = c_configitems::get_cfgdesc_by_name(argname);
@@ -67,13 +90,14 @@ void c_JsonBox::handleIncoming(JsonDocument &Reply, JsonDocument &Request) {
               Serial.println("Update "+String(argname)+" to " + String(val));
               s_param_t rc = c_configitems::update_num_limited(pcd,val);
               RepO.getOrAddMember(argname).set(rc);
-    
             } else {
               const char * nv = kv.value().as<char*>();
               c_configitems::update_string(pcd,nv);
             }
           }
         }
+        #endif
+        saveConfigurables(RepO,ObjReq);
       }
       if (!strcmp("configmode",cmd)) {
         //Breather.configmode();
@@ -94,6 +118,8 @@ void c_JsonBox::handleIncoming(JsonDocument &Reply, JsonDocument &Request) {
         RepO.getOrAddMember("req").set(cmd);
         RepO.getOrAddMember("mac").set(jmac);
         RepO.getOrAddMember("cmd").set("configack");
+        saveConfigurables(RepO,ObjReq);
+
       }
     }
   }
