@@ -74,9 +74,16 @@
             status    = k_start3;
           }
           break;
-        case k_start3:
+        case k_start3: {
           if ((int32_t)(now-stepstart) > 2000) {
             stepstart = now;
+            #if IPADDRESS_FOLLOWS_MAC
+              IPAddress ownAddr(192,168,mac[4],(mac[5]&0xf0) + 1);  // 12bit mac in ipaddr
+              //IPAddress gwyAddr(192,168,mac[4],(mac[5]&0xf0) + 14); // 12bit mac in ipaddr
+              IPAddress netMask(255,255,255,240);
+              WiFi.softAPConfig(ownAddr,ownAddr,netMask);
+              Serial.println("FollowsMac");
+            #endif
             if(WiFi.softAP(ApName,MacId,6,0,4)){  // MacId string is Password
               Serial.print("\nAP : " + ApName + " running, IP : ");
               Serial.println(WiFi.softAPIP());
@@ -86,7 +93,7 @@
               status = k_start1;
             }
           }
-          break;
+        } break;
         case k_up1:        
           if ((int32_t)(now-stepstart) > 2000) {
             MyAddr = WiFi.localIP();
