@@ -49,7 +49,7 @@
             status=k_start1;
           } else {
             Serial.println("config checksum fail, no netinfo, starting AP");
-            status=k_start1;
+            status=k_start3;
           }
           break;
         case k_start1:
@@ -77,7 +77,7 @@
         case k_start3:
           if ((int32_t)(now-stepstart) > 2000) {
             stepstart = now;
-            if(WiFi.softAP(ApName)){
+            if(WiFi.softAP(ApName,MacId,6,0,4)){  // MacId string is Password
               Serial.print("\nAP : " + ApName + " running, IP : ");
               Serial.println(WiFi.softAPIP());
               status = k_up2;

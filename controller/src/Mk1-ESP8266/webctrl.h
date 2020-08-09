@@ -68,12 +68,27 @@ class c_webcontrol {
   public:
 
     c_webcontrol() {
+      WiFi.macAddress(mac);
       MacId  = WiFi.macAddress();
       ApName = "bav_"+MacId;
     }
 
     inline void setup(void) {
-      Serial.println(String("WifiModule has mac ") + MacId);
+      Serial.println(String("WifiModule has mac ") + MacId); 
+      #if LOGALOTMORE
+        Serial.print("MAC: ");
+        Serial.print(mac[0],HEX);
+        Serial.print(":");
+        Serial.print(mac[1],HEX);
+        Serial.print(":");
+        Serial.print(mac[2],HEX);
+        Serial.print(":");
+        Serial.print(mac[3],HEX);
+        Serial.print(":");
+        Serial.print(mac[4],HEX);
+        Serial.print(":");
+        Serial.println(mac[5],HEX);
+      #endif
     }
 
 
