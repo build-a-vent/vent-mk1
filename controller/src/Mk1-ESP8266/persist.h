@@ -23,10 +23,8 @@
     #define SLEN 40
 
     struct saveables {
-      //char ssid[SLEN];
-      //char pwd[SLEN];
       s_configblock configblock;
-      // put configureables into configblock
+      // configureables are in configblock
       uint32_t cks;
     };
 

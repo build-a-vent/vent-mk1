@@ -72,8 +72,8 @@ bool c_persist::readFromEeprom(void) {
 }
 
 void c_persist::writeToEeprom(void) {
-  //Serial.printf("EEPROM write size %d addr 0x%x ssid=\"%s\", key=\"%s\"\n",
-  //sizeof(*this),LOCATION_NETCONFIG,getSsid(),getKey());
+  Serial.printf("EEPROM write size %d ssid=\"%s\", key=\"%s\"\n",
+                 sizeof(*this),getSsid(),getKey());
   uint8_t *wp = (uint8_t *)&(this->s);
   calcCks();
   EEPROM.begin(4095);

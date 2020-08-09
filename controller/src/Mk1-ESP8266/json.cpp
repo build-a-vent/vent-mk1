@@ -49,12 +49,22 @@ int c_JsonBox::saveConfigurables(JsonObject &ReplyObj, JsonObject &SrcObj) {
       ++count;
       if (c_configitems::is_numeric(pcd)) {
         s_param_t val = kv.value().as<int>();
-        Serial.println("Update "+String(argname)+" to " + String(val));
+        #if LOGALOTMORE
+          Serial.println("Update "+String(argname)+" to " + String(val));
+        #endif
         s_param_t rc = c_configitems::update_num_limited(pcd,val);
         ReplyObj.getOrAddMember(argname).set(rc);
       } else {
         const char * nv = kv.value().as<char*>();
+        #if LOGALOTMORE
+          Serial.println("Update "+String(argname)+" to " + String(nv));
+        #endif
         c_configitems::update_string(pcd,nv);
+        const char *val = c_configitems::getStringByName(argname);
+        #if LOGALOTMORE
+          Serial.print("re-read : ");
+          Serial.println(val);
+        #endif
       }
     }
   }
@@ -87,7 +97,9 @@ void c_JsonBox::handleIncoming(JsonDocument &Reply, JsonDocument &Request) {
           if (pcd) { // this param exists
             if (c_configitems::is_numeric(pcd)) {
               s_param_t val = kv.value().as<int>();
-              Serial.println("Update "+String(argname)+" to " + String(val));
+              #if LOGALOTMORE
+                Serial.println("Update "+String(argname)+" to " + String(val));
+              #endif
               s_param_t rc = c_configitems::update_num_limited(pcd,val);
               RepO.getOrAddMember(argname).set(rc);
             } else {

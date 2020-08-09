@@ -23,6 +23,7 @@
   #define HAS_DISPLAY                0
   #define USE_SYNONYMES              1 // allow json synonymes
   #define LASTUPDATE_TO_WRITE_MS 30000 // 30 sec after last update EEPROM will be written
+  #define LOGALOTMORE                1 // log stuff to usb serial
   
   #include <stdint.h>
   typedef int32_t s_param_t; // SIGNED!! integer format in numeric & stack operations 

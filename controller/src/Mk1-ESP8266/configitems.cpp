@@ -159,7 +159,7 @@ void c_configitems::initialize(void){
   for (uint8_t i=0; configdesc[i].name!=NULL;++i) {
     void *p = (void*)(pcfgb+configdesc[i].offset);
     if (configdesc[i].isnum) {
-      *(s_param_t*)p = (configdesc[i].maxval+configdesc[i].minval/2);
+      *(s_param_t*)p = (configdesc[i].maxval+configdesc[i].minval)/2;
     } else {
       strlcpy((char *)p,"??",5);
     }

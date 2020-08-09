@@ -146,6 +146,7 @@ void setup()
   webcontrol.setup();
 
   if (!c_configitems::verify_post_load()) {
+    Serial.println ("erroneous config, using defaults");
     c_configitems::initialize();
   }
   
