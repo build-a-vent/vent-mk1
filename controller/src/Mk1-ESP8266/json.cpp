@@ -19,6 +19,7 @@
 #include "json.h"
 #include "webctrl.h"
 #include "breathe.h"
+#include "persist.h"
 
 int8_t c_JsonBox::command(const char * const cmd) {
   if (!strcmp(cmd,"jshow")) {
@@ -61,6 +62,9 @@ int c_JsonBox::saveConfigurables(JsonObject &ReplyObj, JsonObject &SrcObj) {
         #endif
         c_configitems::update_string(pcd,nv);
         const char *val = c_configitems::getStringByName(argname);
+        //if (!strcmp(val,nv)) {
+        //  Serial.println("Truncation in storing " + String(kv.value()) + " : "String(val));
+        //}
         #if LOGALOTMORE
           Serial.print("re-read : ");
           Serial.println(val);
@@ -131,6 +135,7 @@ void c_JsonBox::handleIncoming(JsonDocument &Reply, JsonDocument &Request) {
         RepO.getOrAddMember("mac").set(jmac);
         RepO.getOrAddMember("cmd").set("configack");
         saveConfigurables(RepO,ObjReq);
+        c_persist::speedflush();
 
       }
     }

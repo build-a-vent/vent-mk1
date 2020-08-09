@@ -65,6 +65,8 @@
       //inline uint32_t     getCks(void)     { return s.cks; }      
       
       void poll (bool may_write_eeprom);
+
+      static void           speedflush(void);
   };
   
   extern c_persist netconfig;

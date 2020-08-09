@@ -18,6 +18,8 @@
 #include <EEPROM.h>
 #include <stdint.h>
 
+c_persist netconfig;
+
 uint32_t c_persist::cks_config(uint8_t *p, uint16_t size) {
   uint32_t accu=0;
   for (int i = 0;i<size;++i) {
@@ -72,8 +74,10 @@ bool c_persist::readFromEeprom(void) {
 }
 
 void c_persist::writeToEeprom(void) {
-  Serial.printf("EEPROM write size %d ssid=\"%s\", key=\"%s\"\n",
-                 sizeof(*this),getSsid(),getKey());
+  #if LOGALOTMORE
+    Serial.printf("EEPROM write size %d ssid=\"%s\", key=\"%s\"\n",
+                   sizeof(*this),getSsid(),getKey());
+  #endif
   uint8_t *wp = (uint8_t *)&(this->s);
   calcCks();
   EEPROM.begin(4095);
@@ -85,7 +89,16 @@ void c_persist::writeToEeprom(void) {
 }
 
 void c_persist::eeflush(void) {
-  if (lastsaved != lastupdate) { writeToEeprom(); }
+  if (lastsaved != lastupdate) { 
+    lastupdate = millis() - LASTUPDATE_TO_WRITE_MS;
+    if (lastupdate == lastsaved) {
+      ++lastupdate;
+    }
+  } // leave the real flush to the poll method
+}
+
+void c_persist::speedflush(void) {
+  netconfig.eeflush();
 }
 
 void c_persist::poll(bool maywrite) {
@@ -107,6 +120,5 @@ int8_t c_persist::command(const char * const cmd) {
   return 0;
 }
 
-c_persist netconfig;
 
   
